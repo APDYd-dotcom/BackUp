@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+
+/* Global defaults */
+html,
+body {
+  height: 100%;
+}
+
+/* App background & text */
+body {
+  @apply bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+  margin: 0;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+/* Links */
+a {
+  @apply text-blue-600 hover:text-blue-700;
+}
+
+/* Buttons (base style – optional) */
+button {
+  @apply rounded-lg px-4 py-2 font-medium transition;
+}
+
+/* Inputs */
+input,
+textarea,
+select {
+  @apply w-full rounded-lg border border-gray-300 px-3 py-2
+         focus:outline-none focus:ring-2 focus:ring-blue-500
+         dark:bg-gray-800 dark:border-gray-700;
+}
