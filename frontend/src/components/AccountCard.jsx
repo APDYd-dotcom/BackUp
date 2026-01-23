@@ -20,28 +20,51 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
     alert("Password copied!");
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm("Delete this account?")) return;
+    await axios.delete(`http://localhost:5000/api/accounts/${account.id}`);
+    if (onDelete) onDelete(account.id); 
+  };
+  
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
-      const res = await axios.put(
+  
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+      if (!token) return alert("You must be logged in");
+  
+      // Send PATCH request with token and data
+      const res = await axios.patch(
         `http://localhost:5000/api/accounts/${account.id}`,
-        form
+        {
+          platform: form.platform,
+          username: form.username,
+          password: form.password,
+          notes: form.notes || "", // Include notes if needed
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-      onUpdate(res.data);
+  
+      console.log("Update response:", res.data); // Debug
+      if (onUpdate) onUpdate(res.data);
       setEditing(false);
-    } catch {
-      alert("Update failed");
+    } catch (err) {
+      console.error("Update error:", err.response || err); // More info
+      alert(err.response?.data?.message || "Update failed");
     } finally {
       setLoading(false);
     }
   };
-
-  const handleDelete = async () => {
-    if (!window.confirm("Delete this account?")) return;
-    await axios.delete(`http://localhost:5000/api/accounts/${account.id}`);
-    onDelete(account.id);
-  };
+  
+  
+  
 
   return (
     <>
@@ -145,169 +168,3 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
     </>
   );
 }
-
-
-
-// ------------------------------------
-
-// import { useState } from "react";
-// import { FaEye, FaCopy, FaTrash, FaEdit, FaTimes } from "react-icons/fa";
-// import axios from "axios";
-
-// export default function AccountCard({ account, onDelete, onUpdate }) {
-//   const [showPassword, setShowPassword] = useState(false);
-//   const [editing, setEditing] = useState(false);
-//   const [form, setForm] = useState({ ...account });
-//   const [loading, setLoading] = useState(false);
-
-//   if (!account) return null;
-
-//   const handleCopy = () => {
-//     navigator.clipboard.writeText(account.password);
-//     alert("Password copied!");
-//   };
-
-//   const handleDelete = async () => {
-//     if (!window.confirm("Delete this account?")) return;
-//     await axios.delete(`http://localhost:5000/api/accounts/${account.id}`);
-//     onDelete(account.id);
-//   };
-
-//   const handleUpdate = async (e) => {
-//     e.preventDefault();
-//     try {
-//       setLoading(true);
-//       const res = await axios.put(
-//         `http://localhost:5000/api/accounts/${account.id}`,
-//         form
-//       );
-//       onUpdate(res.data);
-//       setEditing(false);
-//     } catch (err) {
-//       alert("Update failed");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <>
-//       {/* CARD */}
-//       <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-5">
-//         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
-//           {account.platform}
-//         </h3>
-//         <p className="text-gray-500 dark:text-gray-400">{account.username}</p>
-//         <p className="font-mono mt-1 text-gray-700 dark:text-gray-300">
-//           {showPassword ? account.password : "••••••••"}
-//         </p>
-
-//         <div className="flex gap-2 mt-4">
-//           <button onClick={() => setShowPassword(!showPassword)}>
-//             <FaEye />
-//           </button>
-//           <button onClick={handleCopy}>
-//             <FaCopy />
-//           </button>
-//           <button onClick={() => setEditing(true)}>
-//             <FaEdit />
-//           </button>
-//           <button onClick={handleDelete}>
-//             <FaTrash />
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* EDIT MODAL */}
-//       {editing && (
-//         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-//           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
-//             <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
-//               <h2 className="text-xl font-bold">Update Account</h2>
-//               <button onClick={() => setEditing(false)}>
-//                 <FaTimes />
-//               </button>
-//             </div>
-
-//             <form onSubmit={handleUpdate} className="p-6 space-y-4">
-//               <input
-//                 value={form.platform}
-//                 onChange={(e) =>
-//                   setForm({ ...form, platform: e.target.value })
-//                 }
-//                 className="w-full px-4 py-2 rounded border dark:bg-gray-700"
-//                 placeholder="Platform"
-//                 required
-//               />
-
-//               <input
-//                 value={form.username}
-//                 onChange={(e) =>
-//                   setForm({ ...form, username: e.target.value })
-//                 }
-//                 className="w-full px-4 py-2 rounded border dark:bg-gray-700"
-//                 placeholder="Username"
-//                 required
-//               />
-
-//               <input
-//                 value={form.password}
-//                 onChange={(e) =>
-//                   setForm({ ...form, password: e.target.value })
-//                 }
-//                 className="w-full px-4 py-2 rounded border dark:bg-gray-700"
-//                 placeholder="Password"
-//                 required
-//               />
-
-//               <div className="flex gap-3 pt-4">
-//                 <button
-//                   type="submit"
-//                   disabled={loading}
-//                   className="flex-1 bg-blue-600 text-white py-2 rounded"
-//                 >
-//                   {loading ? "Saving..." : "Save Changes"}
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={() => setEditing(false)}
-//                   className="flex-1 bg-gray-300 dark:bg-gray-600 py-2 rounded"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           </div>
-//         </div>
-//       )}
-//     </>
-//   );
-// }
-
-
-// ----------------------------
-
-
-// import { FaEye, FaCopy, FaTrash } from "react-icons/fa";
-
-// export default function AccountCard({ platform, username }) {
-//   return (
-//     <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-5 flex flex-col justify-between">
-//       <div>
-//         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{platform}</h3>
-//         <p className="text-gray-500 dark:text-gray-400">{username}</p>
-//       </div>
-//       <div className="flex gap-3 mt-4">
-//         <button className="flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-700 transition">
-//           <FaEye /> Show
-//         </button>
-//         <button className="flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 rounded-lg hover:bg-green-200 dark:hover:bg-green-700 transition">
-//           <FaCopy /> Copy
-//         </button>
-//         <button className="flex items-center gap-2 px-3 py-1 bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200 rounded-lg hover:bg-red-200 dark:hover:bg-red-700 transition">
-//           <FaTrash /> Delete
-//         </button>
-//       </div>
-//     </div>
-//   );
-// }

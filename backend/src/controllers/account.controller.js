@@ -92,11 +92,28 @@ export async function updateAccount(req, res) {
     const userId = req.userId;
     const { platform, username, password, notes } = req.body;
 
+    // Only update fields that are provided
+    const existing = await db.get(
+      "SELECT * FROM accounts WHERE id = ? AND user_id = ?",
+      [id, userId]
+    );
+    if (!existing) return res.status(404).json({ message: "Account not found" });
+
     await db.run(
-      `UPDATE accounts
-       SET platform = ?, username = ?, password = ?, notes = ?
+      `UPDATE accounts SET
+       platform = ?, 
+       username = ?, 
+       password = ?, 
+       notes = ?
        WHERE id = ? AND user_id = ?`,
-      [platform, username, password, notes || "", id, userId]
+      [
+        platform ?? existing.platform,
+        username ?? existing.username,
+        password ?? existing.password,
+        notes ?? existing.notes,
+        id,
+        userId,
+      ]
     );
 
     const updated = await db.get(
@@ -104,13 +121,10 @@ export async function updateAccount(req, res) {
       [id, userId]
     );
 
-    if (!updated) {
-      return res.status(404).json({ message: "Account not found" });
-    }
-
     res.json(updated);
   } catch (err) {
     console.error("Update error:", err);
     res.status(500).json({ message: "Update failed" });
   }
 }
+
