@@ -9,6 +9,7 @@ import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminRoute from "./components/AdminRoute";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
 import { useContext } from "react";
 
 function ImpersonationBanner() {
@@ -30,8 +31,9 @@ function ImpersonationBanner() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <ToastProvider>
+      <AuthProvider>
+        <BrowserRouter>
         <ImpersonationBanner />
         <Navbar />
         <Routes>
@@ -45,5 +47,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </ToastProvider>
   );
 }

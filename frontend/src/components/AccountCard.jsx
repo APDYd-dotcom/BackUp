@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { FaEye, FaCopy, FaTrash, FaEdit, FaTimes } from "react-icons/fa";
 import axios from "axios";
+import { useToast } from "../context/ToastContext";
 
 export default function AccountCard({ account, onDelete, onUpdate }) {
+  const toast = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [modalError, setModalError] = useState("");
 
   const [form, setForm] = useState({
     platform: account.platform,
@@ -21,19 +24,21 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(account.password);
-    alert("Password copied!");
+    toast.success("Password copied!");
   };
 
   const handleDelete = () => {
+    setModalError("");
     setAdminPassword("");
     setDeleting(true);
   };
 
   const confirmDelete = async (e) => {
     e.preventDefault();
+    setModalError("");
     const token = localStorage.getItem("token");
-    if (!token) return alert("You must be logged in");
-    if (!adminPassword) return alert("Password is required");
+    if (!token) return toast.error("You must be logged in");
+    if (!adminPassword) return setModalError("Password is required");
 
     try {
       setLoading(true);
@@ -41,11 +46,11 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
         headers: { Authorization: `Bearer ${token}` },
         data: { password: adminPassword }
       });
+      toast.success("Account deleted");
       if (onDelete) onDelete(account.id); 
       setDeleting(false);
     } catch (err) {
-      console.error("Delete error:", err);
-      alert(err.response?.data?.message || "Failed to delete account");
+      setModalError(err.response?.data?.message || "Failed to delete account");
     } finally {
       setLoading(false);
     }
@@ -53,12 +58,13 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
   
   const handleUpdate = async (e) => {
     e.preventDefault();
+    setModalError("");
     try {
       setLoading(true);
   
       // Get token from localStorage
       const token = localStorage.getItem("token");
-      if (!token) return alert("You must be logged in");
+      if (!token) return toast.error("You must be logged in");
   
       // Send PUT request with token and data
       const res = await axios.put(
@@ -81,10 +87,10 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
   
       console.log("Update response:", res.data); // Debug
       if (onUpdate) onUpdate(res.data);
+      toast.success("Account updated");
       setEditing(false);
     } catch (err) {
-      console.error("Update error:", err.response || err); // More info
-      alert(err.response?.data?.message || "Update failed");
+      setModalError(err.response?.data?.message || "Update failed");
     } finally {
       setLoading(false);
     }
@@ -174,6 +180,11 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
             </div>
 
             <form onSubmit={handleUpdate} className="p-6 space-y-4">
+              {modalError && (
+                <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm">
+                  {modalError}
+                </div>
+              )}
               {["platform", "username", "password"].map((field) => (
                 <input
                   key={field}
@@ -236,6 +247,12 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
             </div>
 
             <form onSubmit={confirmDelete} className="p-6 space-y-4">
+              {modalError && (
+                <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm">
+                  {modalError}
+                </div>
+              )}
+
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Are you sure you want to delete the account for <span className="font-semibold">{account.platform}</span>? This action requires your admin password.
               </p>

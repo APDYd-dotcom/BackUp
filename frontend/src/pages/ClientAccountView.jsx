@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getUserAccounts, createAccountForUser, getUsers } from "../services/adminService";
 import AccountCard from "../components/AccountCard";
+import { useToast } from "../context/ToastContext";
 
 export default function ClientAccountView() {
   const { id } = useParams();
+  const toast = useToast();
   const [client, setClient] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ export default function ClientAccountView() {
       setAccounts(data);
     } catch (err) {
       console.error(err);
-      alert("Failed to load client data");
+      toast.error("Failed to load client data");
     } finally {
       setLoading(false);
     }
@@ -100,6 +102,7 @@ export default function ClientAccountView() {
 }
 
 function AccountCreator({ userId, onCreated }) {
+  const toast = useToast();
   const [platform, setPlatform] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -107,10 +110,12 @@ function AccountCreator({ userId, onCreated }) {
   const [backupCodes, setBackupCodes] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
     try {
       const payload = { 
         platform, 
@@ -123,10 +128,11 @@ function AccountCreator({ userId, onCreated }) {
       const acc = await createAccountForUser(userId, payload);
       setPlatform(""); setUsername(""); setPassword(""); 
       setClientName(""); setBackupCodes(""); setNotes("");
+      toast.success("Account created successfully");
       onCreated && onCreated(acc);
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.message || "Failed to create account");
+      setError(err?.response?.data?.message || "Failed to create account");
     } finally {
       setLoading(false);
     }
@@ -134,6 +140,11 @@ function AccountCreator({ userId, onCreated }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       <input 
         value={platform} onChange={e=>setPlatform(e.target.value)} 
         placeholder="Platform (e.g. Gmail)" required 

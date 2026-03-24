@@ -3,12 +3,27 @@ import { useNavigate } from "react-router-dom";
 import { getUsers, createUser, deleteUser, updateUser, impersonateUser } from "../services/adminService";
 import AdminUserForm from "../components/AdminUserForm";
 import { AuthContext } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import { FaTimes, FaLock } from "react-icons/fa";
 
 export default function AdminDashboard() {
   const { user, impersonate } = useContext(AuthContext);
+  const toast = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  
+  const [updatePassModalVisible, setUpdatePassModalVisible] = useState(false);
+  const [userToUpdate, setUserToUpdate] = useState(null);
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [updatingPass, setUpdatingPass] = useState(false);
+  const [modalError, setModalError] = useState("");
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,7 +36,7 @@ export default function AdminDashboard() {
       impersonate(data.token, data.user);
       navigate("/dashboard");
     } catch(err) {
-      alert("Failed to impersonate");
+      toast.error("Failed to impersonate");
     }
   };
 
@@ -32,7 +47,7 @@ export default function AdminDashboard() {
       setUsers(data);
     } catch (err) {
       console.error(err);
-      alert('Failed to load users');
+      toast.error("Failed to load users");
     } finally {
       setLoading(false);
     }
@@ -44,34 +59,63 @@ export default function AdminDashboard() {
     setShowForm(false);
   };
 
-  const handleDelete = async (id) => {
-    const password = window.prompt("Security Check: Please enter your password to delete this user.");
-    if (!password) return;
+  const handleDeleteClick = (u) => {
+    setUserToDelete(u);
+    setAdminPassword("");
+    setModalError("");
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async (e) => {
+    e.preventDefault();
+    setModalError("");
+    if (!adminPassword) return setModalError("Password is required");
 
     try {
-      await deleteUser(id, password);
-      setUsers(prev => prev.filter(u => u.id !== id));
-      alert("Deleted successfully.");
+      setDeleting(true);
+      await deleteUser(userToDelete.id, adminPassword);
+      setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+      toast.success("User deleted successfully");
+      setDeleteModalVisible(false);
+      setUserToDelete(null);
     } catch (err) {
-      alert(err?.response?.data?.message || "Verification failed. Incorrect password.");
+      setModalError(err?.response?.data?.message || "Verification failed. Incorrect password.");
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const handleUpdatePassword = async (u) => {
-    const newPass = window.prompt(`Update password for Admin: ${u.name}\nEnter new password:`);
-    if (!newPass) return;
+  const handleUpdatePasswordClick = (u) => {
+    setUserToUpdate(u);
+    setNewAdminPassword("");
+    setModalError("");
+    setUpdatePassModalVisible(true);
+  };
+
+  const confirmUpdatePassword = async (e) => {
+    e.preventDefault();
+    setModalError("");
+    if (!newAdminPassword) return setModalError("New password is required");
     
     try {
+      setUpdatingPass(true);
       const token = localStorage.getItem("token");
-      await fetch(`http://localhost:5000/api/admin/users/${u.id}`, {
+      const res = await fetch(`http://localhost:5000/api/admin/users/${userToUpdate.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ password: newPass })
+        body: JSON.stringify({ password: newAdminPassword })
       });
-      alert("Password updated successfully!");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to update password");
+      }
+      toast.success("Password updated successfully!");
       fetchUsers();
+      setUpdatePassModalVisible(false);
     } catch (err) {
-      alert("Failed to update password");
+      setModalError(err.message || "Failed to update password");
+    } finally {
+      setUpdatingPass(false);
     }
   };
 
@@ -168,7 +212,7 @@ export default function AdminDashboard() {
                         </button>
                       )}
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleUpdatePassword(u); }}
+                        onClick={(e) => { e.stopPropagation(); handleUpdatePasswordClick(u); }}
                         className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 hover:dark:bg-gray-600 text-gray-700 dark:text-gray-300 py-2.5 rounded-xl transition font-medium text-sm"
                       >
                         Update Pwd
@@ -176,7 +220,7 @@ export default function AdminDashboard() {
                     </>
                   )}
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(u.id); }}
+                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(u); }}
                     className="p-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 transition"
                     title="Delete Client"
                   >
@@ -188,6 +232,121 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* DELETE MODAL */}
+      {deleteModalVisible && userToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+            <div className="bg-red-50 dark:bg-red-900/20 px-6 py-4 border-b border-red-100 dark:border-red-800/30 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">Confirm Deletion</h2>
+              <button onClick={() => setDeleteModalVisible(false)}>
+                <FaTimes className="text-red-400 hover:text-red-600 transition" />
+              </button>
+            </div>
+
+            <form onSubmit={confirmDelete} className="p-6 space-y-4">
+              {modalError && (
+                <div className="mb-2 p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm">
+                  {modalError}
+                </div>
+              )}
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Are you sure you want to delete <span className="font-semibold">{userToDelete.name}</span>? This action requires your password.
+              </p>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Your Password
+                </label>
+                <input
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 focus:ring-2 focus:ring-red-500 outline-none"
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={deleting}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl transition font-medium"
+                >
+                  {deleting ? "Deleting..." : "Confirm Delete"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalVisible(false)}
+                  className="flex-1 bg-gray-200 dark:bg-gray-700 py-2.5 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition font-medium text-gray-800 dark:text-gray-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* UPDATE PASSWORD MODAL */}
+      {updatePassModalVisible && userToUpdate && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 px-6 py-4 border-b border-indigo-100 dark:border-indigo-800/30 flex justify-between items-center">
+              <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400">
+                <FaLock className="text-lg" />
+                <h2 className="text-lg font-semibold">Update Password</h2>
+              </div>
+              <button onClick={() => setUpdatePassModalVisible(false)}>
+                <FaTimes className="text-indigo-400 hover:text-indigo-600 transition" />
+              </button>
+            </div>
+
+            <form onSubmit={confirmUpdatePassword} className="p-6 space-y-4">
+              {modalError && (
+                <div className="mb-2 p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm">
+                  {modalError}
+                </div>
+              )}
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Set a new password for Admin: <span className="font-semibold text-gray-800 dark:text-white">{userToUpdate.name}</span>
+              </p>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={newAdminPassword}
+                  onChange={(e) => setNewAdminPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                  placeholder="Enter new strong password"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={updatingPass}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl transition font-medium"
+                >
+                  {updatingPass ? "Updating..." : "Update Password"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUpdatePassModalVisible(false)}
+                  className="flex-1 bg-gray-200 dark:bg-gray-700 py-2.5 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition font-medium text-gray-800 dark:text-gray-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
