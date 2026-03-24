@@ -11,6 +11,8 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
     platform: account.platform,
     username: account.username,
     password: account.password,
+    client_name: account.client_name || "",
+    backup_codes: account.backup_codes || "",
   });
 
   if (!account) return null;
@@ -22,8 +24,19 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
 
   const handleDelete = async () => {
     if (!window.confirm("Delete this account?")) return;
-    await axios.delete(`http://localhost:5000/api/accounts/${account.id}`);
-    if (onDelete) onDelete(account.id); 
+    
+    const token = localStorage.getItem("token");
+    if (!token) return alert("You must be logged in");
+
+    try {
+      await axios.delete(`http://localhost:5000/api/accounts/${account.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (onDelete) onDelete(account.id); 
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete account");
+    }
   };
   
   const handleUpdate = async (e) => {
@@ -35,14 +48,16 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
       const token = localStorage.getItem("token");
       if (!token) return alert("You must be logged in");
   
-      // Send PATCH request with token and data
-      const res = await axios.patch(
+      // Send PUT request with token and data
+      const res = await axios.put(
         `http://localhost:5000/api/accounts/${account.id}`,
         {
           platform: form.platform,
           username: form.username,
           password: form.password,
           notes: form.notes || "", // Include notes if needed
+          client_name: form.client_name,
+          backup_codes: form.backup_codes,
         },
         {
           headers: {
@@ -71,12 +86,28 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
       {/* CARD */}
       <div className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700">
         <div className="space-y-1">
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
-            {account.platform}
-          </h3>
+          <div className="flex justify-between items-start">
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
+              {account.platform}
+            </h3>
+            {account.client_name && (
+              <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-purple-900 dark:text-purple-300">
+                {account.client_name}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {account.username}
           </p>
+
+          {account.backup_codes && (
+            <div className="mt-3">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">Backup Codes</span>
+              <p className={`font-mono text-xs p-2 rounded-lg bg-gray-100 dark:bg-gray-700 whitespace-pre-wrap ${!showPassword && "blur-sm select-none"}`}>
+                {account.backup_codes}
+              </p>
+            </div>
+          )}
 
           <p
             className={`font-mono text-sm mt-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 
@@ -143,6 +174,21 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
                   required
                 />
               ))}
+
+              <input
+                value={form.client_name}
+                onChange={(e) => setForm({ ...form, client_name: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="Client Name"
+              />
+              
+              <textarea
+                value={form.backup_codes}
+                onChange={(e) => setForm({ ...form, backup_codes: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs"
+                placeholder="Backup Codes"
+                rows="3"
+              />
 
               <div className="flex gap-3 pt-2">
                 <button

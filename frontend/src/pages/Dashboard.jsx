@@ -34,29 +34,45 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
-      <h2 className="text-3xl font-bold mb-6 text-gray-900 dark:text-gray-100">
-        My Accounts
-      </h2>
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-4 sm:p-8">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-10">
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Vault Overview
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">
+            Manage and access your secured account credentials.
+          </p>
+        </header>
 
-      {loading ? (
-        <p className="text-gray-700 dark:text-gray-300">Loading...</p>
-      ) : accounts.length === 0 ? (
-        <p className="text-gray-700 dark:text-gray-300">
-          You have no saved accounts yet.
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {accounts.map((acc) => (
-            <AccountCard
-              key={acc.id}
-              account={acc}
-              onDelete={deleteCard}
-              onUpdate={updateCard}
-            />
-          ))}
-        </div>
-      )}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-500 dark:text-slate-400 font-medium">Decrypting your vault...</p>
+          </div>
+        ) : accounts.length === 0 ? (
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Your Vault is Empty</h3>
+            <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+              Contact your administrator to add your social media accounts and backup codes.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {accounts.map((acc) => (
+              <AccountCard
+                key={acc.id}
+                account={acc}
+                onDelete={deleteCard}
+                onUpdate={updateCard}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

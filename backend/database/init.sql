@@ -3,7 +3,11 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL
+  password TEXT NOT NULL,
+  plain_password TEXT,
+  role TEXT NOT NULL DEFAULT 'user',
+  parent_id INTEGER,
+  FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- ACCOUNTS TABLE (UPDATED)
@@ -13,6 +17,8 @@ CREATE TABLE IF NOT EXISTS accounts (
   username TEXT NOT NULL,
   password TEXT NOT NULL,
   notes TEXT,
+  client_name TEXT,
+  backup_codes TEXT,
   user_id INTEGER NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

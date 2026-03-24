@@ -6,19 +6,25 @@ import { openDB } from "../config/db.js";
  */
 export async function addAccount(req, res) {
   try {
-    const { platform, username, password, notes } = req.body;
+    const { platform, username, password, notes, client_name, backup_codes } = req.body;
     const userId = req.userId; // from auth middleware
+    const userRole = req.userRole; 
+
+    // Allow any logged-in user to have personal accounts (admin, superadmin, or user)
+    // if (userRole !== 'user') {
+    //   return res.status(403).json({ message: "Only regular users can have personal accounts" });
+    // }
 
     if (!platform || !username || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+      return res.status(400).json({ message: "Platform, username, and password are required" });
     }
 
     const db = await openDB();
 
     const result = await db.run(
-      `INSERT INTO accounts (platform, username, password, notes, user_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [platform, username, password, notes || "", userId]
+      `INSERT INTO accounts (platform, username, password, notes, client_name, backup_codes, user_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [platform, username, password, notes || "", client_name || "", backup_codes || "", userId]
     );
 
     res.status(201).json({
@@ -27,6 +33,8 @@ export async function addAccount(req, res) {
       username,
       password,
       notes,
+      client_name,
+      backup_codes
     });
   } catch (err) {
     console.error("Add account error:", err);
@@ -42,9 +50,15 @@ export async function getAccounts(req, res) {
   try {
     const db = await openDB();
     const userId = req.userId;
+    const userRole = req.userRole;
+
+    // Allow any logged-in user to see their personal accounts
+    // if (userRole !== 'user') {
+    //   return res.json([]);
+    // }
 
     const accounts = await db.all(
-      `SELECT id, platform, username, password, notes
+      `SELECT id, platform, username, password, notes, client_name, backup_codes
        FROM accounts
        WHERE user_id = ?`,
       [userId]
@@ -66,14 +80,25 @@ export async function deleteAccount(req, res) {
     const { id } = req.params;
     const userId = req.userId;
 
-    const result = await db.run(
-      "DELETE FROM accounts WHERE id = ? AND user_id = ?",
-      [id, userId]
+    const existing = await db.get(
+      `SELECT a.*, u.parent_id 
+       FROM accounts a 
+       JOIN users u ON a.user_id = u.id 
+       WHERE a.id = ?`,
+      [id]
     );
 
-    if (result.changes === 0) {
+    if (!existing) {
       return res.status(404).json({ message: "Account not found" });
     }
+
+    const currentUser = await db.get("SELECT role FROM users WHERE id = ?", [userId]);
+    
+    if (existing.user_id !== userId && existing.parent_id !== userId && currentUser.role !== 'superadmin') {
+      return res.status(403).json({ message: "Unauthorized to delete this account" });
+    }
+
+    await db.run("DELETE FROM accounts WHERE id = ?", [id]);
 
     res.json({ message: "Account deleted successfully" });
   } catch (error) {
@@ -90,35 +115,46 @@ export async function updateAccount(req, res) {
     const db = await openDB();
     const { id } = req.params;
     const userId = req.userId;
-    const { platform, username, password, notes } = req.body;
+    const { platform, username, password, notes, client_name, backup_codes } = req.body;
 
-    // Only update fields that are provided
     const existing = await db.get(
-      "SELECT * FROM accounts WHERE id = ? AND user_id = ?",
-      [id, userId]
+      `SELECT a.*, u.parent_id 
+       FROM accounts a 
+       JOIN users u ON a.user_id = u.id 
+       WHERE a.id = ?`,
+      [id]
     );
     if (!existing) return res.status(404).json({ message: "Account not found" });
+
+    const currentUser = await db.get("SELECT role FROM users WHERE id = ?", [userId]);
+    
+    if (existing.user_id !== userId && existing.parent_id !== userId && currentUser.role !== 'superadmin') {
+      return res.status(403).json({ message: "Unauthorized to update this account" });
+    }
 
     await db.run(
       `UPDATE accounts SET
        platform = ?, 
        username = ?, 
        password = ?, 
-       notes = ?
-       WHERE id = ? AND user_id = ?`,
+       notes = ?,
+       client_name = ?,
+       backup_codes = ?
+       WHERE id = ?`,
       [
         platform ?? existing.platform,
         username ?? existing.username,
         password ?? existing.password,
         notes ?? existing.notes,
-        id,
-        userId,
+        client_name ?? existing.client_name,
+        backup_codes ?? existing.backup_codes,
+        id
       ]
     );
 
     const updated = await db.get(
-      "SELECT * FROM accounts WHERE id = ? AND user_id = ?",
-      [id, userId]
+      "SELECT * FROM accounts WHERE id = ?",
+      [id]
     );
 
     res.json(updated);

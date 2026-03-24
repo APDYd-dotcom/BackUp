@@ -5,14 +5,28 @@ export default function AddAccount() {
   const [platform, setPlatform] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [clientName, setClientName] = useState("");
+  const [backupCodes, setBackupCodes] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await addAccount({ platform, username, password });
-    alert("Account added!");
-    setPlatform("");
-    setUsername("");
-    setPassword("");
+    try {
+      await addAccount({ 
+        platform, 
+        username, 
+        password,
+        client_name: clientName,
+        backup_codes: backupCodes
+      });
+      alert("Account added!");
+      setPlatform("");
+      setUsername("");
+      setPassword("");
+      setClientName("");
+      setBackupCodes("");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to add account");
+    }
   };
 
   return (
@@ -42,6 +56,20 @@ export default function AddAccount() {
           onChange={(e) => setPassword(e.target.value)}
           className="w-full p-2 rounded border border-gray-300 dark:bg-gray-800 dark:border-gray-700"
           required
+        />
+        <input
+          type="text"
+          placeholder="Client Name (e.g. Acme Corp)"
+          value={clientName}
+          onChange={(e) => setClientName(e.target.value)}
+          className="w-full p-2 rounded border border-gray-300 dark:bg-gray-800 dark:border-gray-700"
+        />
+        <textarea
+          placeholder="Paste Backup Codes Here..."
+          value={backupCodes}
+          onChange={(e) => setBackupCodes(e.target.value)}
+          rows="3"
+          className="w-full p-2 rounded border border-gray-300 dark:bg-gray-800 dark:border-gray-700 font-mono text-sm"
         />
         <button
           type="submit"
