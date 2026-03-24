@@ -1,4 +1,5 @@
 import { openDB } from "../config/db.js";
+import bcrypt from "bcryptjs";
 
 /**
  * POST /api/accounts
@@ -79,6 +80,17 @@ export async function deleteAccount(req, res) {
     const db = await openDB();
     const { id } = req.params;
     const userId = req.userId;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ message: "Password is required to delete." });
+    }
+
+    const currentUser = await db.get("SELECT password, role FROM users WHERE id = ?", [userId]);
+    if (!currentUser) return res.status(401).json({ message: "Unauthorized" });
+
+    const isValid = await bcrypt.compare(password, currentUser.password);
+    if (!isValid) return res.status(401).json({ message: "Invalid password." });
 
     const existing = await db.get(
       `SELECT a.*, u.parent_id 
@@ -92,7 +104,7 @@ export async function deleteAccount(req, res) {
       return res.status(404).json({ message: "Account not found" });
     }
 
-    const currentUser = await db.get("SELECT role FROM users WHERE id = ?", [userId]);
+    // currentUser is already fetched above with its role
     
     if (existing.user_id !== userId && existing.parent_id !== userId && currentUser.role !== 'superadmin') {
       return res.status(403).json({ message: "Unauthorized to delete this account" });

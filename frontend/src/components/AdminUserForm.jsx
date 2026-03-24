@@ -76,19 +76,21 @@ export default function AdminUserForm({ onCreate, onCancel }) {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Password {user?.role === 'superadmin' && <span className="text-xs text-indigo-500 dark:text-indigo-400 font-medium">(Required)</span>}
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder={user?.role === 'superadmin' ? 'Enter a strong password (Required)' : 'Enter initial password (Optional)'}
-            required={user?.role === 'superadmin'}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-          />
-        </div>
+        {user?.role === 'superadmin' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Password <span className="text-xs text-indigo-500 dark:text-indigo-400 font-medium">(Required)</span>
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Enter a strong password (Required)"
+              required
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 mt-6">
