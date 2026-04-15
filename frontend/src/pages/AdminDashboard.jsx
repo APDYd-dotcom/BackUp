@@ -4,14 +4,19 @@ import { getUsers, createUser, deleteUser, updateUser, impersonateUser } from ".
 import AdminUserForm from "../components/AdminUserForm";
 import { AuthContext } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
-import { FaTimes, FaLock } from "react-icons/fa";
+import { FaTimes, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function AdminDashboard() {
   const { user, impersonate } = useContext(AuthContext);
   const toast = useToast();
   const [users, setUsers] = useState([]);
+  const [visiblePasswords, setVisiblePasswords] = useState({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  
+  const togglePasswordVisibility = (userId) => {
+    setVisiblePasswords(prev => ({ ...prev, [userId]: !prev[userId] }));
+  };
   
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
@@ -186,8 +191,19 @@ export default function AdminDashboard() {
                   
                   {u.plain_password && (
                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4 border border-gray-100 dark:border-gray-600">
-                      <span className="text-xs text-gray-500 uppercase tracking-wider block mb-1">Admin Password</span>
-                      <code className="text-sm text-gray-900 dark:text-gray-200 font-mono block select-all">{u.plain_password}</code>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-gray-500 uppercase tracking-wider block">Admin Password</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); togglePasswordVisibility(u.id); }}
+                          className="text-gray-400 hover:text-blue-500 transition-colors"
+                          title={visiblePasswords[u.id] ? "Hide password" : "Show password"}
+                        >
+                          {visiblePasswords[u.id] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                        </button>
+                      </div>
+                      <code className={`text-sm font-mono block transition-all duration-300 ${!visiblePasswords[u.id] ? "blur-sm select-none text-gray-400" : "select-all text-gray-900 dark:text-gray-200"}`}>
+                        {u.plain_password}
+                      </code>
                     </div>
                   )}
                 </div>

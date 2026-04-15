@@ -3,6 +3,7 @@ import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
+import { encrypt } from '../src/utils/crypto.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,9 +18,11 @@ async function main() {
   
   console.log('Creating Super Admin user...');
   const superHash = await bcrypt.hash('APDY!@pro2060', 10);
+  const encryptedPlainPass = encrypt('APDY!@pro2060');
+
   await db.run(
-    'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-    ['SuperAdmin', 'arakazaprincedestinyvan@gmail.com', superHash, 'superadmin']
+    'INSERT INTO users (name, email, password, plain_password, role) VALUES (?, ?, ?, ?, ?)',
+    ['SuperAdmin', 'arakazaprincedestinyvan@gmail.com', superHash, encryptedPlainPass, 'superadmin']
   );
   
   console.log('Reset and seed completed successfully!');
