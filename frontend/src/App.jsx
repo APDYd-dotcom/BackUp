@@ -33,7 +33,7 @@ export default function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter basename="/vault">
         <ImpersonationBanner />
         <Navbar />
         <Routes>
