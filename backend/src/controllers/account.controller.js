@@ -1,5 +1,6 @@
 import { openDB } from "../config/db.js";
 import bcrypt from "bcryptjs";
+import { encrypt, decrypt } from "../utils/crypto.js";
 
 /**
  * POST /api/accounts
@@ -22,10 +23,17 @@ export async function addAccount(req, res) {
 
     const db = await openDB();
 
+    const encPlatform = encrypt(platform);
+    const encUsername = encrypt(username);
+    const encPassword = encrypt(password);
+    const encNotes = encrypt(notes || "");
+    const encClientName = encrypt(client_name || "");
+    const encBackupCodes = encrypt(backup_codes || "");
+
     const result = await db.run(
       `INSERT INTO accounts (platform, username, password, notes, client_name, backup_codes, user_id)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [platform, username, password, notes || "", client_name || "", backup_codes || "", userId]
+      [encPlatform, encUsername, encPassword, encNotes, encClientName, encBackupCodes, userId]
     );
 
     res.status(201).json({
@@ -65,7 +73,17 @@ export async function getAccounts(req, res) {
       [userId]
     );
 
-    res.json(accounts);
+    const decryptedAccounts = accounts.map(acc => ({
+      ...acc,
+      platform: decrypt(acc.platform),
+      username: decrypt(acc.username),
+      password: decrypt(acc.password),
+      notes: decrypt(acc.notes),
+      client_name: decrypt(acc.client_name),
+      backup_codes: decrypt(acc.backup_codes)
+    }));
+
+    res.json(decryptedAccounts);
   } catch (err) {
     console.error("Get accounts error:", err);
     res.status(500).json({ error: "Database error" });
@@ -144,6 +162,13 @@ export async function updateAccount(req, res) {
       return res.status(403).json({ message: "Unauthorized to update this account" });
     }
 
+    const encPlatform = platform !== undefined ? encrypt(platform) : existing.platform;
+    const encUsername = username !== undefined ? encrypt(username) : existing.username;
+    const encPassword = password !== undefined ? encrypt(password) : existing.password;
+    const encNotes = notes !== undefined ? encrypt(notes) : existing.notes;
+    const encClientName = client_name !== undefined ? encrypt(client_name) : existing.client_name;
+    const encBackupCodes = backup_codes !== undefined ? encrypt(backup_codes) : existing.backup_codes;
+
     await db.run(
       `UPDATE accounts SET
        platform = ?, 
@@ -154,20 +179,30 @@ export async function updateAccount(req, res) {
        backup_codes = ?
        WHERE id = ?`,
       [
-        platform ?? existing.platform,
-        username ?? existing.username,
-        password ?? existing.password,
-        notes ?? existing.notes,
-        client_name ?? existing.client_name,
-        backup_codes ?? existing.backup_codes,
+        encPlatform,
+        encUsername,
+        encPassword,
+        encNotes,
+        encClientName,
+        encBackupCodes,
         id
       ]
     );
 
-    const updated = await db.get(
+    const updatedRaw = await db.get(
       "SELECT * FROM accounts WHERE id = ?",
       [id]
     );
+
+    const updated = {
+      ...updatedRaw,
+      platform: decrypt(updatedRaw.platform),
+      username: decrypt(updatedRaw.username),
+      password: decrypt(updatedRaw.password),
+      notes: decrypt(updatedRaw.notes),
+      client_name: decrypt(updatedRaw.client_name),
+      backup_codes: decrypt(updatedRaw.backup_codes)
+    };
 
     res.json(updated);
   } catch (err) {

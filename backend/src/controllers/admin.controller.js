@@ -1,6 +1,7 @@
 import { openDB } from "../config/db.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { encrypt, decrypt } from "../utils/crypto.js";
 
 export async function getUsers(req, res) {
   try {
@@ -9,7 +10,8 @@ export async function getUsers(req, res) {
     
     if (currentUser.role === 'superadmin') {
       const admins = await db.all("SELECT id, name, email, role, plain_password FROM users WHERE role = 'admin'");
-      return res.json(admins);
+      const decryptedAdmins = admins.map(a => ({ ...a, plain_password: decrypt(a.plain_password) }));
+      return res.json(decryptedAdmins);
     } else if (currentUser.role === 'admin') {
       const users = await db.all("SELECT id, name, email, role FROM users WHERE parent_id = ? AND role = 'user'", [req.userId]);
       return res.json(users);
@@ -45,7 +47,17 @@ export async function getUserAccounts(req, res) {
       [id]
     );
 
-    res.json(accounts);
+    const decryptedAccounts = accounts.map(acc => ({
+      ...acc,
+      platform: decrypt(acc.platform),
+      username: decrypt(acc.username),
+      password: decrypt(acc.password),
+      notes: decrypt(acc.notes),
+      client_name: decrypt(acc.client_name),
+      backup_codes: decrypt(acc.backup_codes)
+    }));
+
+    res.json(decryptedAccounts);
   } catch (err) {
     console.error("Get user accounts error:", err);
     res.status(500).json({ message: "Failed to fetch accounts" });
@@ -81,9 +93,10 @@ export async function createUser(req, res) {
       return res.status(403).json({ message: "Not authorized to create users" });
     }
 
+    const encryptedPlainPass = plainPassToStore ? encrypt(plainPassToStore) : null;
     const result = await db.run(
       "INSERT INTO users (name, email, password, plain_password, role, parent_id) VALUES (?, ?, ?, ?, ?, ?)",
-      [name, email, passToStore, plainPassToStore, role, req.userId]
+      [name, email, passToStore, encryptedPlainPass, role, req.userId]
     );
 
     res.status(201).json({ id: result.lastID, name, email, role, plain_password: plainPassToStore });
@@ -115,9 +128,16 @@ export async function createAccountForUser(req, res) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
+    const encPlatform = encrypt(platform);
+    const encUsername = encrypt(username);
+    const encPassword = encrypt(password);
+    const encNotes = encrypt(notes || '');
+    const encClientName = encrypt(client_name || '');
+    const encBackupCodes = encrypt(backup_codes || '');
+
     const result = await db.run(
       `INSERT INTO accounts (platform, username, password, notes, client_name, backup_codes, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [platform, username, password, notes || '', client_name || '', backup_codes || '', id]
+      [encPlatform, encUsername, encPassword, encNotes, encClientName, encBackupCodes, id]
     );
 
     res.status(201).json({ id: result.lastID, platform, username, password, notes, client_name, backup_codes });
@@ -181,7 +201,8 @@ export async function updateUser(req, res) {
     if (!targetUser || targetUser.role !== 'admin') return res.status(403).json({ message: "Can only update admins" });
 
     const hash = await bcrypt.hash(password, 10);
-    await db.run("UPDATE users SET password = ?, plain_password = ? WHERE id = ?", [hash, password, id]);
+    const encPassword = encrypt(password);
+    await db.run("UPDATE users SET password = ?, plain_password = ? WHERE id = ?", [hash, encPassword, id]);
 
     res.json({ message: "Admin password updated" });
   } catch (err) {
