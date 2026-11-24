@@ -13,6 +13,8 @@ import {
   hashSecret,
   secureEqual,
 } from "../src/utils/security.js";
+import { notifySuperAdmins } from "../src/services/audit.service.js";
+import { createAccountForUser } from "../src/controllers/admin.controller.js";
 
 test("randomDigits returns only the requested number of digits", () => {
   const value = randomDigits(6);
@@ -116,6 +118,163 @@ test("action approvals bind action, resource type, and resource id", async () =>
       delete process.env.DATABASE_PATH;
     } else {
       process.env.DATABASE_PATH = oldDatabasePath;
+    }
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("Super Admin notifications report skipped email and still create in-app notifications", async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vault-notification-"));
+  const oldDatabasePath = process.env.DATABASE_PATH;
+  const smtpVariables = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"];
+  const oldSmtpValues = Object.fromEntries(
+    smtpVariables.map((name) => [name, process.env[name]]),
+  );
+  process.env.DATABASE_PATH = path.join(tempDir, "test.db");
+  for (const name of smtpVariables) process.env[name] = "";
+
+  try {
+    let db = await openTemporaryDatabase(process.env.DATABASE_PATH);
+    await db.run(
+      "INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)",
+      ["Super Admin", "superadmin@example.test", "test-password", "superadmin"],
+    );
+    await db.close();
+
+    const result = await notifySuperAdmins({
+      title: "New account added",
+      message: "A user added a new account.",
+      type: "account_alert",
+      resourceType: "account",
+      resourceId: 12,
+    });
+
+    assert.deepEqual(result, {
+      recipients: 1,
+      emailsSent: 0,
+      emailFailures: 0,
+      emailsSkipped: 1,
+    });
+
+    db = await openTemporaryDatabase(process.env.DATABASE_PATH);
+    const notification = await db.get(
+      "SELECT title, resource_type, resource_id FROM notifications WHERE recipient_id = 1",
+    );
+    assert.deepEqual(notification, {
+      title: "New account added",
+      resource_type: "account",
+      resource_id: "12",
+    });
+    await db.close();
+  } finally {
+    if (oldDatabasePath === undefined) {
+      delete process.env.DATABASE_PATH;
+    } else {
+      process.env.DATABASE_PATH = oldDatabasePath;
+    }
+    for (const name of smtpVariables) {
+      if (oldSmtpValues[name] === undefined) {
+        delete process.env[name];
+      } else {
+        process.env[name] = oldSmtpValues[name];
+      }
+    }
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("creating an account for a client notifies Super Admin even when they create it", async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vault-admin-account-"));
+  const oldDatabasePath = process.env.DATABASE_PATH;
+  const smtpVariables = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"];
+  const oldSmtpValues = Object.fromEntries(
+    smtpVariables.map((name) => [name, process.env[name]]),
+  );
+  process.env.DATABASE_PATH = path.join(tempDir, "test.db");
+  for (const name of smtpVariables) process.env[name] = "";
+
+  try {
+    const baseDb = await open({
+      filename: process.env.DATABASE_PATH,
+      driver: sqlite3.Database,
+    });
+    await baseDb.exec(`
+      CREATE TABLE users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        email TEXT UNIQUE,
+        password TEXT,
+        role TEXT,
+        parent_id INTEGER
+      );
+      CREATE TABLE accounts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        platform TEXT,
+        username TEXT,
+        password TEXT,
+        notes TEXT,
+        client_name TEXT,
+        backup_codes TEXT,
+        user_id INTEGER
+      );
+      INSERT INTO users (name, email, password, role)
+      VALUES ('Super Admin', 'superadmin@example.test', 'test-password', 'superadmin');
+      INSERT INTO users (name, email, password, role, parent_id)
+      VALUES ('Client User', 'client@example.test', 'test-password', 'user', 1);
+    `);
+    await baseDb.close();
+
+    const response = {
+      statusCode: null,
+      body: null,
+      status(code) {
+        this.statusCode = code;
+        return this;
+      },
+      json(body) {
+        this.body = body;
+        return this;
+      },
+    };
+    await createAccountForUser(
+      {
+        params: { id: "2" },
+        userId: 1,
+        body: { platform: "Example", username: "client-user", password: "not-a-real-password" },
+        ip: "127.0.0.1",
+        get: () => "test-agent",
+      },
+      response,
+    );
+
+    assert.equal(response.statusCode, 201);
+    assert.deepEqual(response.body.notification, {
+      emailSent: false,
+      emailsSent: 0,
+      recipients: 1,
+    });
+
+    const db = await openTemporaryDatabase(process.env.DATABASE_PATH);
+    const notification = await db.get(
+      "SELECT title, resource_type FROM notifications WHERE recipient_id = 1",
+    );
+    assert.deepEqual(notification, {
+      title: "New account added",
+      resource_type: "account",
+    });
+    await db.close();
+  } finally {
+    if (oldDatabasePath === undefined) {
+      delete process.env.DATABASE_PATH;
+    } else {
+      process.env.DATABASE_PATH = oldDatabasePath;
+    }
+    for (const name of smtpVariables) {
+      if (oldSmtpValues[name] === undefined) {
+        delete process.env[name];
+      } else {
+        process.env[name] = oldSmtpValues[name];
+      }
     }
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

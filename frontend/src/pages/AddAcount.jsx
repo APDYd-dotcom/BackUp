@@ -16,7 +16,7 @@ export default function AddAccount() {
     e.preventDefault();
     setError("");
     try {
-      await addAccount({ 
+      const result = await addAccount({
         platform, 
         username, 
         password,
@@ -24,7 +24,11 @@ export default function AddAccount() {
         backup_codes: backupCodes,
         notes
       });
-      toast.success("Account added!");
+      if (result.notification && !result.notification.emailSent) {
+        toast.error(`Account added, but the Super Admin email was not sent (${result.notification.emailsSent}/${result.notification.recipients}). Check the backend SMTP settings and logs.`);
+      } else {
+        toast.success(result.notification ? "Account added and Super Admin notified!" : "Account added!");
+      }
       setPlatform("");
       setUsername("");
       setPassword("");

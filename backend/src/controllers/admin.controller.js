@@ -152,18 +152,30 @@ export async function createAccountForUser(req, res) {
       userAgent: req.get("user-agent"),
       result: "success",
     });
-    if (creator?.role !== "superadmin") {
-      await notifySuperAdmins({
-        title: "New account added",
-        message: `${creator?.name || "An administrator"} added a new ${platform} account for ${accountOwner?.name || "a user"}${client_name ? ` (${client_name})` : ""}.`,
-        type: "account_alert",
-        resourceType: "account",
-        resourceId: result.lastID,
-        metadata: { createdBy: creator?.name || null, accountOwner: accountOwner?.name || null },
-      });
-    }
+    let notification = null;
+    notification = await notifySuperAdmins({
+      title: "New account added",
+      message: `${creator?.name || "An administrator"} added a new ${platform} account for ${accountOwner?.name || "a user"}${client_name ? ` (${client_name})` : ""}.`,
+      type: "account_alert",
+      resourceType: "account",
+      resourceId: result.lastID,
+      metadata: { createdBy: creator?.name || null, accountOwner: accountOwner?.name || null },
+    });
 
-    res.status(201).json({ id: result.lastID, platform, username, password, notes, client_name, backup_codes });
+    res.status(201).json({
+      id: result.lastID,
+      platform,
+      username,
+      password,
+      notes,
+      client_name,
+      backup_codes,
+      notification: notification && {
+        emailSent: notification.recipients > 0 && notification.emailsSent === notification.recipients,
+        emailsSent: notification.emailsSent,
+        recipients: notification.recipients,
+      },
+    });
   } catch (err) {
     console.error('Create account for user error:', err);
     res.status(500).json({ message: 'Failed to create account' });

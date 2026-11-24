@@ -128,7 +128,11 @@ function AccountCreator({ userId, onCreated }) {
       const acc = await createAccountForUser(userId, payload);
       setPlatform(""); setUsername(""); setPassword(""); 
       setClientName(""); setBackupCodes(""); setNotes("");
-      toast.success("Account created successfully");
+      if (acc.notification && !acc.notification.emailSent) {
+        toast.error(`Account created, but the Super Admin email was not sent (${acc.notification.emailsSent}/${acc.notification.recipients}). Check the backend SMTP settings and logs.`);
+      } else {
+        toast.success(acc.notification ? "Account created and Super Admin notified!" : "Account created successfully");
+      }
       onCreated && onCreated(acc);
     } catch (err) {
       console.error(err);

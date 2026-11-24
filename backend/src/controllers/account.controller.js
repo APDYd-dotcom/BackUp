@@ -47,16 +47,15 @@ export async function addAccount(req, res) {
       userAgent: req.get("user-agent"),
       result: "success",
     });
-    if (creator?.role !== "superadmin") {
-      await notifySuperAdmins({
-        title: "New account added",
-        message: `${creator?.name || "A user"} added a new ${platform} account${client_name ? ` for ${client_name}` : ""}.`,
-        type: "account_alert",
-        resourceType: "account",
-        resourceId: result.lastID,
-        metadata: { createdBy: creator?.name || null },
-      });
-    }
+    let notification = null;
+    notification = await notifySuperAdmins({
+      title: "New account added",
+      message: `${creator?.name || "A user"} added a new ${platform} account${client_name ? ` for ${client_name}` : ""}.`,
+      type: "account_alert",
+      resourceType: "account",
+      resourceId: result.lastID,
+      metadata: { createdBy: creator?.name || null },
+    });
 
     res.status(201).json({
       id: result.lastID,
@@ -65,7 +64,12 @@ export async function addAccount(req, res) {
       password,
       notes,
       client_name,
-      backup_codes
+      backup_codes,
+      notification: notification && {
+        emailSent: notification.recipients > 0 && notification.emailsSent === notification.recipients,
+        emailsSent: notification.emailsSent,
+        recipients: notification.recipients,
+      },
     });
   } catch (err) {
     console.error("Add account error:", err);
