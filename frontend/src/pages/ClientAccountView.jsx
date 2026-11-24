@@ -45,21 +45,21 @@ export default function ClientAccountView() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <Link to="/admin" className="text-blue-600 hover:text-blue-800 transition font-medium text-xl shadow-sm bg-blue-50 py-1 px-3 rounded-lg dark:bg-gray-700 dark:text-blue-400">← Back</Link>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <h1 className="min-w-0 break-words text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
               {client ? `${client.name}'s Accounts` : "Client Accounts"}
             </h1>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Add Account Panel */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 p-6 sticky top-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 lg:sticky lg:top-6">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-4 text-lg">Add New Account</h3>
               <AccountCreator 
                 userId={id} 

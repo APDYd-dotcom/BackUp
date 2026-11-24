@@ -29,18 +29,18 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 animate-gradient-slow p-6">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 animate-gradient-slow p-4 sm:p-6">
       {/* Decorative Circles */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
 
       <div className="w-full max-w-md relative z-10">
-        <div className="glass rounded-[2.5rem] p-10 premium-shadow">
-          <div className="flex flex-col items-center mb-10">
+        <div className="glass rounded-[2rem] p-5 premium-shadow sm:rounded-[2.5rem] sm:p-10">
+          <div className="flex flex-col items-center mb-8 sm:mb-10">
             <div className="w-20 h-20 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg mb-6 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
               <FiShield className="text-white text-4xl" />
             </div>
-            <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight text-center">
+            <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight text-center sm:text-4xl">
               Vault <span className="text-blue-600 dark:text-blue-400">Pro</span>
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-3 text-lg font-medium">Secure access to your data</p>

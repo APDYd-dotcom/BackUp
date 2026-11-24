@@ -9,6 +9,7 @@ export default function AddAccount() {
   const [password, setPassword] = useState("");
   const [clientName, setClientName] = useState("");
   const [backupCodes, setBackupCodes] = useState("");
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
@@ -20,7 +21,8 @@ export default function AddAccount() {
         username, 
         password,
         client_name: clientName,
-        backup_codes: backupCodes
+        backup_codes: backupCodes,
+        notes
       });
       toast.success("Account added!");
       setPlatform("");
@@ -28,15 +30,16 @@ export default function AddAccount() {
       setPassword("");
       setClientName("");
       setBackupCodes("");
+      setNotes("");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to add account");
     }
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-3xl font-bold mb-6">Add Account</h2>
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+    <div className="p-4 sm:p-6">
+      <h2 className="text-2xl font-bold mb-6 sm:text-3xl">Add Account</h2>
+      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
         {error && (
           <div className="p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm">
             {error}
@@ -79,6 +82,13 @@ export default function AddAccount() {
           onChange={(e) => setBackupCodes(e.target.value)}
           rows="3"
           className="w-full p-2 rounded border border-gray-300 dark:bg-gray-800 dark:border-gray-700 font-mono text-sm"
+        />
+        <textarea
+          placeholder="Additional Notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows="3"
+          className="w-full p-2 rounded border border-gray-300 dark:bg-gray-800 dark:border-gray-700 text-sm"
         />
         <button
           type="submit"
