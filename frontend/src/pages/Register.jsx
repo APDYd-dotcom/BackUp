@@ -2,7 +2,7 @@ import { useState } from "react";
 import { register } from "../services/authService";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { FiMail, FiLock, FiShield, FiUser, FiArrowRight } from "react-icons/fi";
+import { FiMail, FiLock, FiShield, FiUser, FiArrowRight, FiEye, FiEyeOff, FiCheck } from "react-icons/fi";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -10,6 +10,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
 
@@ -30,104 +31,122 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 animate-gradient-slow p-4 sm:p-6">
-      {/* Decorative Circles */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-
-      <div className="w-full max-w-md relative z-10">
-        <div className="glass rounded-[2rem] p-5 premium-shadow sm:rounded-[2.5rem] sm:p-10">
-          <div className="flex flex-col items-center mb-8 sm:mb-10">
-            <div className="w-20 h-20 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg mb-6 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
-              <FiShield className="text-white text-4xl" />
+    <main className="min-h-screen bg-[#0f172a] px-0 sm:px-6 sm:py-6 lg:px-8">
+      <div className="mx-auto grid min-h-screen max-w-6xl overflow-hidden bg-[#111827] shadow-[0_24px_80px_-24px_rgba(30,64,175,0.38)] sm:min-h-[calc(100vh-3rem)] sm:rounded-[2rem] lg:grid-cols-[1fr_0.86fr]">
+        <section className="relative hidden min-h-[620px] overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 p-12 lg:flex lg:flex-col lg:justify-between">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(96,165,250,0.24),transparent_32%),radial-gradient(circle_at_85%_75%,rgba(168,85,247,0.22),transparent_28%)]"></div>
+          <div className="relative flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15 backdrop-blur">
+              <FiShield className="text-2xl text-white" />
             </div>
-            <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight text-center sm:text-4xl">
-              Vault <span className="text-blue-600 dark:text-blue-400">Pro</span>
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-3 text-lg font-medium">Create your secure account</p>
+            <span className="text-xl font-bold text-white">Vault</span>
           </div>
 
-          {error && (
-            <div className="mb-8 p-4 bg-red-50/50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-2xl flex items-center gap-3 animate-shake">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-              <p className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</p>
+          <div className="relative max-w-md">
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 shadow-[0_16px_40px_rgba(79,70,229,0.45)]">
+              <FiUser className="text-2xl text-white" />
             </div>
-          )}
+            <h2 className="text-5xl font-bold leading-[1.08] tracking-tight text-white">
+              Secure access,
+              <span className="block text-blue-300">made simple.</span>
+            </h2>
+            <p className="mt-5 max-w-sm text-base leading-7 text-blue-100/75">
+              Create your account and keep every credential organized, available, and protected.
+            </p>
+            <div className="mt-8 flex items-center gap-3 text-sm font-medium text-blue-100/90">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/20">
+                <FiCheck className="text-emerald-300" />
+              </span>
+              Secure account management
+            </div>
+          </div>
 
-          <form onSubmit={handleRegister} className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1">Full Name</label>
-              <div className="relative group">
-                <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                <input
-                  type="text"
-                  placeholder="John Doe"
-                  className="pl-12 bg-white/50 dark:bg-gray-900/50"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
+          <p className="relative text-xs font-medium tracking-[0.18em] text-blue-200/50 uppercase">
+            Vault Pro
+          </p>
+        </section>
+
+        <section className="flex min-h-[620px] items-center justify-center px-5 py-8 sm:px-10 lg:px-14 bg-[#111827]">
+          <div className="w-full max-w-md">
+            <div className="mb-7 lg:hidden">
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 shadow-lg shadow-indigo-600/20">
+                <FiShield className="text-2xl text-white" />
               </div>
+              <span className="text-lg font-bold text-white">Vault</span>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1">Email Address</label>
-              <div className="relative group">
-                <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                <input
-                  type="email"
-                  placeholder="name@company.com"
-                  className="pl-12 bg-white/50 dark:bg-gray-900/50"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+            <div className="mb-7">
+              <p className="mb-2 text-sm font-bold text-indigo-400">GET STARTED</p>
+              <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                Create your account
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-slate-400">
+                Set up secure access to your vault.
+              </p>
+            </div>
+
+            {error && (
+              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert">
+                {error}
               </div>
-            </div>
+            )}
 
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1">Password</label>
-              <div className="relative group">
-                <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-12 bg-white/50 dark:bg-gray-900/50"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div>
+                <label htmlFor="name" className="mb-2 block text-sm font-semibold text-slate-300">Full name</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-slate-700/80 text-slate-200">
+                    <FiUser className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <input id="name" type="text" autoComplete="name" placeholder="apdy" className="auth-input h-12 rounded-xl border-slate-700 bg-slate-800/70 pl-14 pr-4 text-white placeholder:text-slate-400 focus:border-indigo-500 focus:bg-slate-800 focus:ring-indigo-500" value={name} onChange={(e) => setName(e.target.value)} required />
+                </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full relative group overflow-hidden bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl shadow-xl shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 mt-4"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-              <span className="relative flex items-center justify-center gap-2 text-lg font-bold">
+              <div>
+                <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-300">Email address</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-slate-700/80 text-slate-200">
+                    <FiMail className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <input id="email" type="email" autoComplete="email" placeholder="name@company.com" className="auth-input h-12 rounded-xl border-slate-700 bg-slate-800/70 pl-14 pr-4 text-white placeholder:text-slate-400 focus:border-indigo-500 focus:bg-slate-800 focus:ring-indigo-500" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="mb-2 block text-sm font-semibold text-slate-300">Password</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-slate-700/80 text-slate-200">
+                    <FiLock className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password" placeholder="Create a strong password" className="auth-input h-12 rounded-xl border-slate-700 bg-slate-800/70 pl-14 pr-12 text-white placeholder:text-slate-400 focus:border-indigo-500 focus:bg-slate-800 focus:ring-indigo-500" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white" aria-label={showPassword ? "Hide password" : "Show password"}>
+                    {showPassword ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:from-indigo-600 hover:to-purple-600 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-70">
                 {loading ? (
-                  <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                    Creating account...
+                  </>
                 ) : (
                   <>
-                    Create Account <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+                    Create account
+                    <FiArrowRight />
                   </>
                 )}
-              </span>
-            </button>
-          </form>
+              </button>
+            </form>
 
-          <div className="mt-10 pt-8 border-t border-gray-200 dark:border-gray-700/50 text-center">
-            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+            <p className="mt-6 text-center text-sm text-slate-400">
               Already have an account?{" "}
-              <Link to="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
-                Login
-              </Link>
+              <Link to="/login" className="font-bold text-indigo-600 hover:text-purple-600">Sign in</Link>
             </p>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
