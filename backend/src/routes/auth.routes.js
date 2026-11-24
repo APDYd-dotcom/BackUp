@@ -117,7 +117,15 @@ router.post("/login", loginChallengeLimiter, async (req, res) => {
           if (!user) return res.status(404).json({ message: "User not found" });
 
           const settings = await db.get("SELECT * FROM two_factor_settings WHERE user_id = ?", [payload.id]);
-          if (!settings) return res.status(400).json({ message: "2FA is not configured" });
+          if (!settings) {
+            if (user.role === "superadmin") {
+              return res.status(428).json({
+                message: "Super Admin 2FA setup is required",
+                code: "SUPERADMIN_2FA_SETUP_REQUIRED",
+              });
+            }
+            return res.status(400).json({ message: "2FA is not configured" });
+          }
 
           if (settings.email_enabled) {
             if (!emailCode) return res.status(400).json({ message: "Email code is required" });
@@ -341,6 +349,16 @@ router.post("/login", loginChallengeLimiter, async (req, res) => {
       [user.id],
     );
     const requires2fa = Boolean(settings?.email_enabled || settings?.totp_enabled);
+
+    if (user.role === "superadmin" && !requires2fa) {
+      return res.status(428).json({
+        requires2fa: true,
+        setupRequired: true,
+        message: "Super Admin 2FA setup is required",
+        code: "SUPERADMIN_2FA_SETUP_REQUIRED",
+        challengeToken: makeChallengeToken(user.id),
+      });
+    }
 
     if (!requires2fa) {
       await writeAudit({
