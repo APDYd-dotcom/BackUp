@@ -18,6 +18,7 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
     password: account.password,
     client_name: account.client_name || "",
     backup_codes: account.backup_codes || "",
+    notes: account.notes || "",
   });
 
   if (!account) return null;
@@ -25,6 +26,15 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
   const handleCopy = () => {
     navigator.clipboard.writeText(account.password);
     toast.success("Password copied!");
+  };
+
+  const handleCopyNotes = async () => {
+    try {
+      await navigator.clipboard.writeText(account.notes);
+      toast.success("Notes copied!");
+    } catch {
+      toast.error("Failed to copy notes");
+    }
   };
 
   const handleDelete = () => {
@@ -127,6 +137,28 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
             </div>
           )}
 
+          {account.notes && (
+            <div className="mt-3">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Additional Notes</span>
+                <button
+                  type="button"
+                  onClick={handleCopyNotes}
+                  disabled={!showPassword}
+                  className="inline-flex items-center gap-1 rounded-full bg-green-600/10 px-2.5 py-1 text-xs font-medium text-green-600 hover:bg-green-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-green-600/10 disabled:hover:text-green-600 transition"
+                  title={showPassword ? "Copy notes" : "Show notes before copying"}
+                  aria-label={showPassword ? "Copy additional notes" : "Show additional notes before copying"}
+                >
+                  <FaCopy />
+                  <span>Copy</span>
+                </button>
+              </div>
+              <p className={`whitespace-pre-wrap break-words rounded-lg bg-gray-100 p-2 text-sm text-gray-800 dark:bg-gray-700 dark:text-gray-100 ${!showPassword ? "blur-sm select-none" : ""}`}>
+                {account.notes}
+              </p>
+            </div>
+          )}
+
           <p
             className={`break-all font-mono text-sm mt-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700
             ${!showPassword && "blur-sm select-none"}`}
@@ -139,6 +171,9 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
           <button
             onClick={() => setShowPassword(!showPassword)}
             className="text-xs px-4 py-2 rounded-full bg-blue-600/10 text-blue-600 hover:bg-blue-600 hover:text-white transition"
+            title={showPassword ? "Hide password and backup codes" : "Show password and backup codes"}
+            aria-label={showPassword ? "Hide password and backup codes" : "Show password and backup codes"}
+            aria-pressed={showPassword}
           >
             <FaEye />
           </button>
@@ -210,6 +245,14 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
                 onChange={(e) => setForm({ ...form, backup_codes: e.target.value })}
                 className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs"
                 placeholder="Backup Codes"
+                rows="3"
+              />
+
+              <textarea
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                placeholder="Additional Notes"
                 rows="3"
               />
 

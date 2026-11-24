@@ -9,6 +9,7 @@ export default function AddAccount() {
   const [password, setPassword] = useState("");
   const [clientName, setClientName] = useState("");
   const [backupCodes, setBackupCodes] = useState("");
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
@@ -20,7 +21,8 @@ export default function AddAccount() {
         username, 
         password,
         client_name: clientName,
-        backup_codes: backupCodes
+        backup_codes: backupCodes,
+        notes
       });
       toast.success("Account added!");
       setPlatform("");
@@ -28,6 +30,7 @@ export default function AddAccount() {
       setPassword("");
       setClientName("");
       setBackupCodes("");
+      setNotes("");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to add account");
     }
@@ -79,6 +82,13 @@ export default function AddAccount() {
           onChange={(e) => setBackupCodes(e.target.value)}
           rows="3"
           className="w-full p-2 rounded border border-gray-300 dark:bg-gray-800 dark:border-gray-700 font-mono text-sm"
+        />
+        <textarea
+          placeholder="Additional Notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows="3"
+          className="w-full p-2 rounded border border-gray-300 dark:bg-gray-800 dark:border-gray-700 text-sm"
         />
         <button
           type="submit"
