@@ -275,7 +275,7 @@ export default function Login() {
                       : "Enter a code from your authenticator app."}
                 </p>
                 {challenge?.emailEnabled && (
-                  <button type="button" onClick={() => sendEmailOtp("login").catch((err) => setError(err.response?.data?.message || "Could not send email code"))} className="text-sm font-bold text-indigo-400 hover:text-indigo-300">
+                  <button type="button" onClick={() => sendEmailOtp("login", challenge?.challengeToken).catch((err) => setError(err.response?.data?.message || "Could not send email code"))} className="text-sm font-bold text-indigo-400 hover:text-indigo-300">
                     Send email code
                   </button>
                 )}

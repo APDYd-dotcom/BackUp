@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FaEye, FaCopy, FaTrash, FaEdit, FaTimes } from "react-icons/fa";
 import axios from "axios";
 import { useToast } from "../context/ToastContext";
+import { requestActionApproval, verifyActionApproval } from "../services/securityService";
 
 export default function AccountCard({ account, onDelete, onUpdate }) {
   const toast = useToast();
@@ -11,6 +12,8 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
   const [adminPassword, setAdminPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [modalError, setModalError] = useState("");
+  const [actionApproval, setActionApproval] = useState(null);
+  const [approvalOtp, setApprovalOtp] = useState("");
 
   const [form, setForm] = useState({
     platform: account.platform,
@@ -45,10 +48,37 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
     }
   };
 
-  const handleDelete = () => {
+  const requestProtectedAction = async (action) => {
     setModalError("");
-    setAdminPassword("");
-    setDeleting(true);
+    try {
+      const result = await requestActionApproval({
+        action,
+        resourceType: "account",
+        resourceId: account.id,
+        payload: action === "update" ? form : {},
+      });
+      setActionApproval(result);
+      setApprovalOtp("");
+      toast.success("Ask a Super Admin for the approval OTP");
+    } catch (err) {
+      setModalError(err.response?.data?.message || "Could not request approval");
+    }
+  };
+
+  const verifyProtectedAction = async (e) => {
+    e.preventDefault();
+    if (!actionApproval?.approvalId) return;
+    setModalError("");
+    try {
+      setLoading(true);
+      const result = await verifyActionApproval(actionApproval.approvalId, approvalOtp);
+      setActionApproval({ ...actionApproval, verified: true, ...result });
+      toast.success("OTP verified. Retry the protected action.");
+    } catch (err) {
+      setModalError(err.response?.data?.message || "OTP verification failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const confirmDelete = async (e) => {
@@ -62,7 +92,10 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
       setLoading(true);
       await axios.delete(`/api/accounts/${account.id}`, {
         headers: { Authorization: `Bearer ${token}` },
-        data: { password: adminPassword }
+        data: {
+          password: adminPassword,
+          approvalId: actionApproval?.verified ? actionApproval.approvalId : undefined,
+        }
       });
       toast.success("Account deleted");
       if (onDelete) onDelete(account.id); 
@@ -94,6 +127,7 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
           notes: form.notes || "", // Include notes if needed
           client_name: form.client_name,
           backup_codes: form.backup_codes,
+          approvalId: actionApproval?.verified ? actionApproval.approvalId : undefined,
         },
         {
           headers: {
@@ -203,21 +237,62 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
             </button>
 
             <button
-              onClick={() => setEditing(true)}
+              onClick={() => {
+                setModalError("");
+                requestProtectedAction("update").then(() => setEditing(false));
+              }}
               className="p-2 rounded-full bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500 hover:text-white transition"
+              title="Request approval to update"
             >
               <FaEdit />
             </button>
 
             <button
-              onClick={handleDelete}
+              onClick={() => {
+                setModalError("");
+                requestProtectedAction("delete").then(() => setDeleting(true));
+              }}
               className="p-2 rounded-full bg-red-600/10 text-red-600 hover:bg-red-600 hover:text-white transition"
+              title="Request approval to delete"
             >
               <FaTrash />
             </button>
           </div>
         </div>
       </div>
+
+      {actionApproval && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <form onSubmit={verifyProtectedAction} className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
+            <h2 className="text-lg font-bold text-white">Super Admin approval OTP</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Ask a Super Admin for the 6-digit OTP for this {actionApproval.action || "protected"} action.
+            </p>
+            {modalError && (
+              <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                {modalError}
+              </div>
+            )}
+            <input
+              value={approvalOtp}
+              onChange={(e) => setApprovalOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="6-digit approval OTP"
+              className="auth-input mt-4 h-12 text-center text-lg tracking-[0.35em]"
+              required
+            />
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button type="submit" disabled={loading || approvalOtp.length !== 6} className="h-11 rounded-xl bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700">
+                {loading ? "Verifying..." : "Verify OTP"}
+              </button>
+              <button type="button" onClick={() => setActionApproval(null)} className="h-11 rounded-xl border border-slate-700 text-sm font-bold text-slate-300 hover:bg-slate-800">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* UPDATE MODAL */}
       {editing && (
