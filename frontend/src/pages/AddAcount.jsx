@@ -34,9 +34,9 @@ export default function AddAccount() {
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-3xl font-bold mb-6">Add Account</h2>
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+    <div className="p-4 sm:p-6">
+      <h2 className="text-2xl font-bold mb-6 sm:text-3xl">Add Account</h2>
+      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
         {error && (
           <div className="p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm">
             {error}

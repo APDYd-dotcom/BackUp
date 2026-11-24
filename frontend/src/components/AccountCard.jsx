@@ -103,9 +103,9 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
     <>
       {/* CARD */}
       <div className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700">
-        <div className="space-y-1">
-          <div className="flex justify-between items-start">
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
+        <div className="min-w-0 space-y-1">
+          <div className="flex flex-wrap justify-between items-start gap-2">
+            <h3 className="min-w-0 break-words text-xl font-semibold text-gray-800 dark:text-white">
               {account.platform}
             </h3>
             {account.client_name && (
@@ -114,7 +114,7 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="break-all text-sm text-gray-500 dark:text-gray-400">
             {account.username}
           </p>
 
@@ -128,7 +128,7 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
           )}
 
           <p
-            className={`font-mono text-sm mt-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 
+            className={`break-all font-mono text-sm mt-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700
             ${!showPassword && "blur-sm select-none"}`}
           >
             {account.password}

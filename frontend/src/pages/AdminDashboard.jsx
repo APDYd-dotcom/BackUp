@@ -128,15 +128,15 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">User Management</h1>
+        <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
+          <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">User Management</h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">Manage all users and their accounts</p>
             </div>
             <button
               onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-lg font-medium transition shadow-md"
+              className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-lg font-medium transition shadow-md sm:w-auto"
             >
               <span className="text-lg">+</span>
               {showForm ? 'Cancel' : 'Create User'}
@@ -145,10 +145,10 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
         {/* Create Form Modal */}
         {showForm && (
-          <div className="mb-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:mb-8 sm:p-6">
             <AdminUserForm onCreate={handleCreate} onCancel={() => setShowForm(false)} />
           </div>
         )}
@@ -170,7 +170,7 @@ export default function AdminDashboard() {
             </div>
           ) : (
             users.map(u => (
-              <div key={u.id} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
+              <div key={u.id} className="min-w-0 bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 flex flex-col justify-between sm:p-6">
                 <div>
                   <div className="flex justify-between items-start mb-4">
                     <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-sm">
@@ -186,8 +186,8 @@ export default function AdminDashboard() {
                       </span>
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{u.name}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{u.email}</p>
+                  <h3 className="break-words text-xl font-bold text-gray-900 dark:text-white mb-1">{u.name}</h3>
+                  <p className="break-all text-sm text-gray-500 dark:text-gray-400 mb-2">{u.email}</p>
                   
                   {u.plain_password && (
                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4 border border-gray-100 dark:border-gray-600">
