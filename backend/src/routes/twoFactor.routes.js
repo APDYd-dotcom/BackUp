@@ -1,7 +1,7 @@
 import express from "express";
+import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
 import { openDB } from "../config/db.js";
-import authMiddleware from "../middlewares/auth.middleware.js";
 import { encrypt, decrypt } from "../utils/crypto.js";
 import {
   generateTotpSecret,
@@ -13,7 +13,34 @@ import {
 import { sendMail } from "../services/mail.service.js";
 
 const router = express.Router();
-router.use(authMiddleware);
+router.use(async (req, res, next) => {
+  const authorization = req.headers.authorization;
+  const challengeToken = req.headers["x-2fa-challenge"];
+  let payload = null;
+
+  if (authorization?.startsWith("Bearer ")) {
+    try {
+      payload = jwt.verify(authorization.slice(7), process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ message: "Invalid session" });
+    }
+  } else if (challengeToken) {
+    try {
+      payload = jwt.verify(challengeToken, process.env.JWT_SECRET);
+      if (payload.purpose !== "2fa-login") {
+        return res.status(401).json({ message: "Invalid 2FA challenge" });
+      }
+    } catch {
+      return res.status(401).json({ message: "2FA challenge expired" });
+    }
+  } else {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+
+  req.userId = payload.id;
+  req.userRole = payload.role;
+  next();
+});
 
 router.get("/status", async (req, res) => {
   const db = await openDB();

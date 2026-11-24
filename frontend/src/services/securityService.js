@@ -7,11 +7,17 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export function authHeadersWithChallenge(challengeToken) {
+  return challengeToken
+    ? { "X-2FA-Challenge": challengeToken }
+    : authHeaders();
+}
+
 export const get2faStatus = () => API.get("/2fa/status", { headers: authHeaders() }).then(r => r.data);
-export const setupTotp = () => API.post("/2fa/totp/setup", {}, { headers: authHeaders() }).then(r => r.data);
-export const verifyTotpSetup = (code) => API.post("/2fa/totp/verify", { code }, { headers: authHeaders() }).then(r => r.data);
-export const sendEmailOtp = (purpose = "enable-email") => API.post("/2fa/email/send", { purpose }, { headers: authHeaders() }).then(r => r.data);
-export const verifyEmailOtp = (code, purpose = "enable-email") => API.post("/2fa/email/verify", { code, purpose }, { headers: authHeaders() }).then(r => r.data);
+export const setupTotp = (challengeToken) => API.post("/2fa/totp/setup", {}, { headers: authHeadersWithChallenge(challengeToken) }).then(r => r.data);
+export const verifyTotpSetup = (code, challengeToken) => API.post("/2fa/totp/verify", { code }, { headers: authHeadersWithChallenge(challengeToken) }).then(r => r.data);
+export const sendEmailOtp = (purpose = "enable-email", challengeToken) => API.post("/2fa/email/send", { purpose }, { headers: authHeadersWithChallenge(challengeToken) }).then(r => r.data);
+export const verifyEmailOtp = (code, purpose = "enable-email", challengeToken) => API.post("/2fa/email/verify", { code, purpose }, { headers: authHeadersWithChallenge(challengeToken) }).then(r => r.data);
 export const disable2fa = (payload) => API.post("/2fa/disable", payload, { headers: authHeaders() }).then(r => r.data);
 export const decideLoginApproval = (approvalId, payload) => API.post(`/auth/login/approval/${approvalId}/decision`, payload, { headers: authHeaders() }).then(r => r.data);
 export const requestActionApproval = (payload) => API.post("/actions/request", payload, { headers: authHeaders() }).then(r => r.data);

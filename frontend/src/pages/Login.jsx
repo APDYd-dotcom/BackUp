@@ -55,7 +55,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const data = await setupTotp();
+      const data = await setupTotp(challenge?.challengeToken);
       setTotpSetup(data);
     } catch (err) {
       setError(err.response?.data?.message || "Could not start 2FA setup");
@@ -68,7 +68,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await sendEmailOtp("enable-email");
+      await sendEmailOtp("enable-email", challenge?.challengeToken);
       setChallenge((current) => ({ ...current, emailSetup: true }));
     } catch (err) {
       setError(err.response?.data?.message || "Could not send verification email");
@@ -82,7 +82,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await verifyTotpSetup(code);
+      await verifyTotpSetup(code, challenge?.challengeToken);
       setStep("password");
       setChallenge(null);
       setCode("");
@@ -98,7 +98,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await verifyEmailOtp(code, "enable-email");
+      await verifyEmailOtp(code, "enable-email", challenge?.challengeToken);
       setStep("password");
       setChallenge(null);
       setCode("");
