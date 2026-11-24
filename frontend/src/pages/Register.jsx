@@ -98,7 +98,7 @@ export default function Register() {
                   <span className="pointer-events-none absolute left-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-slate-700/80 text-slate-200">
                     <FiUser className="h-4 w-4" aria-hidden="true" />
                   </span>
-                  <input id="name" type="text" autoComplete="name" placeholder="John Doe" className="auth-input h-12 rounded-xl border-slate-700 bg-slate-800/70 pl-14 pr-4 text-white placeholder:text-slate-400 focus:border-indigo-500 focus:bg-slate-800 focus:ring-indigo-500" value={name} onChange={(e) => setName(e.target.value)} required />
+                  <input id="name" type="text" autoComplete="name" placeholder="apdy" className="auth-input h-12 rounded-xl border-slate-700 bg-slate-800/70 pl-14 pr-4 text-white placeholder:text-slate-400 focus:border-indigo-500 focus:bg-slate-800 focus:ring-indigo-500" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
               </div>
 
