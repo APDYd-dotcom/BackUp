@@ -1,7 +1,5 @@
 import crypto from "crypto";
-import dotenv from "dotenv";
-
-dotenv.config();
+import "../config/env.js";
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY; // Must be 256 bits (32 bytes)
 const IV_LENGTH = 16; // For AES, this is always 16
