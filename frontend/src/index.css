@@ -34,6 +34,20 @@ select {
          dark:bg-gray-800/50 dark:border-gray-700 transition-all duration-300;
 }
 
+.auth-input {
+  color-scheme: dark;
+  -webkit-text-fill-color: #f8fafc;
+  caret-color: #818cf8;
+  padding-left: 4.25rem !important;
+  padding-right: 3rem;
+}
+
+.auth-input::placeholder {
+  color: #94a3b8;
+  -webkit-text-fill-color: #94a3b8;
+  opacity: 1;
+}
+
 @keyframes gradient {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }

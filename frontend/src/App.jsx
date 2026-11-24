@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import AddAccount from "./pages/AddAcount";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -29,23 +29,34 @@ function ImpersonationBanner() {
   );
 }
 
+function AppChrome() {
+  const location = useLocation();
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
+
+  return (
+    <>
+      {!isAuthPage && <ImpersonationBanner />}
+      {!isAuthPage && <Navbar />}
+      <Routes>
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/add" element={<PrivateRoute><AddAccount /></PrivateRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/client/:id" element={<AdminRoute><ClientAccountView /></AdminRoute>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    </>
+  );
+}
+
 export default function App() {
   return (
     <ToastProvider>
       <AuthProvider>
         <BrowserRouter basename="/vault">
-        <ImpersonationBanner />
-        <Navbar />
-        <Routes>
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/add" element={<PrivateRoute><AddAccount /></PrivateRoute>} />
-          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-          <Route path="/admin/client/:id" element={<AdminRoute><ClientAccountView /></AdminRoute>} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Routes>
-      </BrowserRouter>
+          <AppChrome />
+        </BrowserRouter>
     </AuthProvider>
     </ToastProvider>
   );
