@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "/node/api/admin",
+  baseURL: "/api/admin",
 });
 
 const getToken = () => localStorage.getItem("token");

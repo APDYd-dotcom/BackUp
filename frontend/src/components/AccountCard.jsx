@@ -42,7 +42,7 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
 
     try {
       setLoading(true);
-      await axios.delete(`/node/api/accounts/${account.id}`, {
+      await axios.delete(`/api/accounts/${account.id}`, {
         headers: { Authorization: `Bearer ${token}` },
         data: { password: adminPassword }
       });
@@ -68,7 +68,7 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
   
       // Send PUT request with token and data
       const res = await axios.put(
-        `/node/api/accounts/${account.id}`,
+        `/api/accounts/${account.id}`,
         {
           platform: form.platform,
           username: form.username,

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "/node/api",
+  baseURL: "/api",
 });
 
 // Add a helper to get token from localStorage
