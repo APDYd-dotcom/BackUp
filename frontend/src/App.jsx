@@ -12,6 +12,7 @@ import { AuthProvider, AuthContext } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { useContext } from "react";
 import Settings from "./pages/Settings";
+import SecurityAdmin from "./pages/SecurityAdmin";
 
 function ImpersonationBanner() {
   const { isImpersonating, stopImpersonating, user } = useContext(AuthContext);
@@ -43,6 +44,7 @@ function AppChrome() {
         <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/add" element={<PrivateRoute><AddAccount /></PrivateRoute>} />
         <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+        <Route path="/security" element={<AdminRoute><SecurityAdmin /></AdminRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/client/:id" element={<AdminRoute><ClientAccountView /></AdminRoute>} />
         <Route path="/login" element={<Login />} />

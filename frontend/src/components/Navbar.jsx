@@ -42,6 +42,14 @@ export default function Navbar() {
                 >
                   Security
                 </Link>
+                {user.role === "superadmin" && (
+                  <Link
+                    to="/security"
+                    className="hidden text-sm font-medium text-indigo-600 hover:text-purple-600 transition-colors sm:inline"
+                  >
+                    Approvals
+                  </Link>
+                )}
                 
                 <div className="hidden sm:block w-px h-5 bg-gray-300 dark:bg-gray-700"></div>
                 

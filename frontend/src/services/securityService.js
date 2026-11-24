@@ -16,3 +16,8 @@ export const disable2fa = (payload) => API.post("/2fa/disable", payload, { heade
 export const decideLoginApproval = (approvalId, payload) => API.post(`/auth/login/approval/${approvalId}/decision`, payload, { headers: authHeaders() }).then(r => r.data);
 export const requestActionApproval = (payload) => API.post("/actions/request", payload, { headers: authHeaders() }).then(r => r.data);
 export const verifyActionApproval = (approvalId, otp) => API.post(`/actions/${approvalId}/verify`, { otp }, { headers: authHeaders() }).then(r => r.data);
+
+export const getPendingLoginApprovals = () => API.get("/admin/login-approvals/pending", { headers: authHeaders() }).then(r => r.data);
+export const getNotifications = () => API.get("/admin/notifications", { headers: authHeaders() }).then(r => r.data);
+export const markNotificationRead = (id) => API.post(`/admin/notifications/${id}/read`, {}, { headers: authHeaders() }).then(r => r.data);
+export const getAuditLog = (params = {}) => API.get("/admin/audit", { headers: authHeaders(), params }).then(r => r.data);

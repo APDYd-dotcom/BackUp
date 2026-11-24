@@ -25,12 +25,20 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(account.password);
+    const token = localStorage.getItem("token");
+    void axios.post(`/api/accounts/${account.id}/credential-event`, { event: "copy" }, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }).catch(() => {});
     toast.success("Password copied!");
   };
 
   const handleCopyNotes = async () => {
     try {
       await navigator.clipboard.writeText(account.notes);
+      const token = localStorage.getItem("token");
+      void axios.post(`/api/accounts/${account.id}/credential-event`, { event: "copy" }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }).catch(() => {});
       toast.success("Notes copied!");
     } catch {
       toast.error("Failed to copy notes");
@@ -169,7 +177,15 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
 
         <div className="flex justify-between items-center mt-5">
           <button
-            onClick={() => setShowPassword(!showPassword)}
+            onClick={() => {
+              if (!showPassword) {
+                const token = localStorage.getItem("token");
+                void axios.post(`/api/accounts/${account.id}/credential-event`, { event: "reveal" }, {
+                  headers: token ? { Authorization: `Bearer ${token}` } : {},
+                }).catch(() => {});
+              }
+              setShowPassword(!showPassword);
+            }}
             className="text-xs px-4 py-2 rounded-full bg-blue-600/10 text-blue-600 hover:bg-blue-600 hover:text-white transition"
             title={showPassword ? "Hide password and backup codes" : "Show password and backup codes"}
             aria-label={showPassword ? "Hide password and backup codes" : "Show password and backup codes"}
