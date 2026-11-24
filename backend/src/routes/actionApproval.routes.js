@@ -95,6 +95,19 @@ router.post("/request", actionLimiter, async (req, res) => {
 
     const db = await openDB();
     const requester = await db.get("SELECT id, name, email, role FROM users WHERE id = ?", [req.userId]);
+    let resourceLabel = `${resourceType} ${resourceId}`;
+    if (resourceType === "account") {
+      const account = await db.get(
+        "SELECT platform, username, client_name FROM accounts WHERE id = ?",
+        [resourceId],
+      );
+      if (account) {
+        const platform = decrypt(account.platform) || "Unknown platform";
+        const username = decrypt(account.username) || "";
+        const clientName = decrypt(account.client_name) || "";
+        resourceLabel = [platform, username, clientName].filter(Boolean).join(" — ");
+      }
+    }
 
     if (requester.role === "superadmin") {
       const result = await executeAccountAction({
@@ -155,7 +168,7 @@ router.post("/request", actionLimiter, async (req, res) => {
         [
           superAdmin.id,
           "Protected action approval required",
-          `${requester.name} requested ${action} for ${resourceType} ${resourceId}.`,
+          `${requester.name} requested ${action} for ${resourceLabel}.`,
           resourceType,
           String(resourceId),
         ],
@@ -163,7 +176,7 @@ router.post("/request", actionLimiter, async (req, res) => {
       void sendMail({
         to: superAdmin.email,
         subject: "Vault protected action approval OTP",
-        text: `A Super Admin OTP request was created for ${requester.name}.\nAction: ${action}\nResource: ${resourceType} ${resourceId}\nOTP: ${otp}\nExpires in 10 minutes.`,
+        text: `A Super Admin OTP request was created for ${requester.name}.\nAction: ${action}\nAccount: ${resourceLabel}\nAccount ID: ${resourceId}\nOTP: ${otp}\nExpires in 10 minutes.`,
       });
     }
 
