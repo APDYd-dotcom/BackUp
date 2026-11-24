@@ -1,5 +1,7 @@
 import app from "./app.js";
-import "./config/env.js";
+import { validateSecurityEnv } from "./config/env.js";
+
+validateSecurityEnv();
 
 const PORT = process.env.PORT || 5000;
 
