@@ -45,7 +45,18 @@ export default function Login() {
       navigate(data.user.role === 'admin' || data.user.role === 'superadmin' ? '/admin' : '/dashboard');
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid credentials. Please try again.");
+      const data = err.response?.data;
+      if (err.response?.status === 428 && data?.code === "2FA_SETUP_REQUIRED") {
+        setChallenge({
+          challengeToken: data.challengeToken,
+          setupRequired: true,
+          user: data.user,
+        });
+        setStep("setup");
+        setError("");
+      } else {
+        setError(data?.message || "Invalid credentials. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
