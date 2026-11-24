@@ -127,51 +127,29 @@ router.post("/login", loginChallengeLimiter, async (req, res) => {
             return res.status(400).json({ message: "2FA is not configured" });
           }
 
-          if (settings.email_enabled) {
-            if (!emailCode) return res.status(400).json({ message: "Email code is required" });
+          let verified = false;
+
+          if (settings.email_enabled && emailCode) {
             const otp = await db.get(
               `SELECT * FROM email_otps
                WHERE user_id = ? AND purpose = 'login' AND used_at IS NULL
                ORDER BY created_at DESC LIMIT 1`,
               [payload.id],
             );
-            if (!otp || new Date(`${otp.expires_at}Z`).getTime() <= Date.now()) {
-              await writeAudit({
-                userId: payload.id,
-                action: "2fa.email.failure",
-                ipAddress: context.ipAddress,
-                userAgent: context.userAgent,
-                result: "failure",
-              });
-              return res.status(400).json({ message: "Email code expired or unavailable" });
+            if (otp && new Date(`${otp.expires_at}Z`).getTime() > Date.now() && otp.attempts < 5) {
+              if (secureEqual(hashSecret(emailCode), otp.code_hash)) {
+                await db.run("UPDATE email_otps SET used_at = datetime('now') WHERE id = ?", [otp.id]);
+                verified = true;
+              } else {
+                await db.run("UPDATE email_otps SET attempts = attempts + 1 WHERE id = ?", [otp.id]);
+              }
             }
-            if (otp.attempts >= 5) {
-              await db.run("UPDATE email_otps SET used_at = datetime('now') WHERE id = ?", [otp.id]);
-              return res.status(400).json({ message: "Email code invalidated" });
-            }
-            if (!secureEqual(hashSecret(emailCode), otp.code_hash)) {
-              await db.run("UPDATE email_otps SET attempts = attempts + 1 WHERE id = ?", [otp.id]);
-              await writeAudit({
-                userId: payload.id,
-                action: "2fa.email.failure",
-                ipAddress: context.ipAddress,
-                userAgent: context.userAgent,
-                result: "failure",
-              });
-              return res.status(400).json({ message: "Invalid email code" });
-            }
-            await db.run("UPDATE email_otps SET used_at = datetime('now') WHERE id = ?", [otp.id]);
           }
 
-          if (settings.totp_enabled) {
-            let verified = false;
+          if (!verified && settings.totp_enabled && (totpCode || backupCode)) {
             if (totpCode) {
               verified = verifyTotp(decrypt(settings.totp_secret_encrypted), totpCode);
-            } else if (backupCode) {
-              const backup = await db.get(
-                "SELECT id, code_hash FROM backup_codes WHERE user_id = ? AND used_at IS NULL",
-                [payload.id],
-              );
+            } else {
               const rows = await db.all(
                 "SELECT id, code_hash FROM backup_codes WHERE user_id = ? AND used_at IS NULL",
                 [payload.id],
@@ -184,7 +162,9 @@ router.post("/login", loginChallengeLimiter, async (req, res) => {
                 }
               }
             }
-            if (!verified) {
+          }
+
+          if (!verified) {
               await writeAudit({
                 userId: payload.id,
                 action: "2fa.totp.failure",
@@ -193,7 +173,6 @@ router.post("/login", loginChallengeLimiter, async (req, res) => {
                 result: "failure",
               });
               return res.status(400).json({ message: "Invalid authenticator or backup code" });
-            }
           }
 
           await writeAudit({
@@ -350,12 +329,12 @@ router.post("/login", loginChallengeLimiter, async (req, res) => {
     );
     const requires2fa = Boolean(settings?.email_enabled || settings?.totp_enabled);
 
-    if (user.role === "superadmin" && !requires2fa) {
+    if (!requires2fa) {
       return res.status(428).json({
         requires2fa: true,
         setupRequired: true,
-        message: "Super Admin 2FA setup is required",
-        code: "SUPERADMIN_2FA_SETUP_REQUIRED",
+        message: "Two-factor setup is required",
+        code: "2FA_SETUP_REQUIRED",
         challengeToken: makeChallengeToken(user.id),
       });
     }

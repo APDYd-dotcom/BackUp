@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { login } from "../services/authService";
+import { useEffect, useState } from "react";
+import { getLoginApprovalStatus, login, verifyLogin2fa } from "../services/authService";
+import { setupTotp, verifyTotpSetup, sendEmailOtp, verifyEmailOtp } from "../services/securityService";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
 import { FiMail, FiLock, FiShield, FiArrowRight, FiEye, FiEyeOff, FiCheck } from "react-icons/fi";
@@ -10,6 +11,12 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState("password");
+  const [challenge, setChallenge] = useState(null);
+  const [code, setCode] = useState("");
+  const [approval, setApproval] = useState(null);
+  const [remaining, setRemaining] = useState(0);
+  const [totpSetup, setTotpSetup] = useState(null);
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
 
@@ -19,15 +26,141 @@ export default function Login() {
     setLoading(true);
     try {
       const data = await login(email, password);
-      // data contains { token, user: { id, name, email, role } }
+      if (data.status === 428 || data.code === "2FA_SETUP_REQUIRED") {
+        setChallenge({ challengeToken: data.challengeToken, setupRequired: true, user: data.user });
+        setStep("setup");
+        return;
+      }
+      if (data.requires2fa) {
+        setChallenge(data);
+        setStep("2fa");
+        return;
+      }
+      if (data.requiresApproval) {
+        setChallenge(data);
+        setStep("approval");
+      }
+      if (data.token) {
       authLogin(data.token, data.user);
       navigate(data.user.role === 'admin' || data.user.role === 'superadmin' ? '/admin' : '/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Invalid credentials. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  const startTotpSetup = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const data = await setupTotp();
+      setTotpSetup(data);
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not start 2FA setup");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startEmailSetup = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await sendEmailOtp("enable-email");
+      setChallenge((current) => ({ ...current, emailSetup: true }));
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not send verification email");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyTotp = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await verifyTotpSetup(code);
+      setStep("password");
+      setChallenge(null);
+      setCode("");
+    } catch (err) {
+      setError(err.response?.data?.message || "Invalid authenticator code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyEmailSetup = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await verifyEmailOtp(code, "enable-email");
+      setStep("password");
+      setChallenge(null);
+      setCode("");
+    } catch (err) {
+      setError(err.response?.data?.message || "Invalid email code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submit2fa = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const data = await verifyLogin2fa({
+        challengeToken: challenge.challengeToken,
+        emailCode: challenge.emailEnabled ? code : undefined,
+        totpCode: challenge.totpEnabled ? code : undefined,
+      });
+      if (data.approved) {
+        authLogin(data.token, data.user);
+        navigate(data.user.role === "admin" || data.user.role === "superadmin" ? "/admin" : "/dashboard");
+        return;
+      }
+      setApproval({
+        approvalId: data.approvalId,
+        approvalToken: data.approvalToken,
+        userNumber: data.userNumber,
+        expiresInSeconds: data.expiresInSeconds,
+      });
+      setRemaining(data.expiresInSeconds);
+      setStep("waiting");
+    } catch (err) {
+      setError(err.response?.data?.message || "2FA verification failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (step !== "waiting" || !approval?.approvalId) return undefined;
+    const timer = window.setInterval(async () => {
+      setRemaining((value) => Math.max(0, value - 1));
+      try {
+        const data = await getLoginApprovalStatus(approval.approvalId, approval.approvalToken);
+        if (data.status === "approved") {
+          window.clearInterval(timer);
+          authLogin(data.token, data.user);
+          navigate(data.user.role === "admin" || data.user.role === "superadmin" ? "/admin" : "/dashboard");
+        } else if (data.status === "denied" || data.status === "expired") {
+          window.clearInterval(timer);
+          setError(data.status === "expired" ? "Approval request expired" : "Login denied");
+          setStep("password");
+          setApproval(null);
+        }
+      } catch {
+        // Keep polling while the approval record remains available.
+      }
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [step, approval, authLogin, navigate]);
 
   return (
     <main className="min-h-screen bg-[#0f172a] px-0 sm:px-6 sm:py-6 lg:px-8">
@@ -90,7 +223,72 @@ export default function Login() {
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="space-y-5">
+            {step === "setup" && (
+              <div className="space-y-5">
+                <h2 className="text-xl font-bold text-white">Set up two-factor authentication</h2>
+                <p className="text-sm leading-6 text-slate-400">Configure an authenticator app or email verification before continuing.</p>
+                {!totpSetup ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <button type="button" onClick={startTotpSetup} disabled={loading} className="rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 py-4 text-sm font-bold text-indigo-300 hover:bg-indigo-500/20">
+                      Authenticator app
+                    </button>
+                    <button type="button" onClick={startEmailSetup} disabled={loading} className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-4 text-sm font-bold text-slate-200 hover:bg-slate-700">
+                      Email OTP
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={verifyTotp} className="space-y-4">
+                    <img src={totpSetup.qrCodeDataUrl} alt="TOTP QR code" className="mx-auto rounded-xl bg-white p-3" />
+                    <p className="break-all rounded-lg bg-slate-800 p-3 text-center text-xs text-slate-300">Manual key: {totpSetup.manualKey}</p>
+                    <input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="6-digit code" className="auth-input h-12 text-center text-lg tracking-[0.35em]" />
+                    <button type="submit" disabled={loading || code.length !== 6} className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm font-bold text-white">Verify and enable</button>
+                  </form>
+                )}
+                {challenge?.emailSetup && (
+                  <form onSubmit={verifyEmailSetup} className="space-y-3">
+                    <input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="Email 6-digit code" className="auth-input h-12 text-center text-lg tracking-[0.35em]" />
+                    <button type="submit" disabled={loading || code.length !== 6} className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm font-bold text-white">Verify email</button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {step === "2fa" && (
+              <form onSubmit={submit2fa} className="space-y-5">
+                <h2 className="text-xl font-bold text-white">Two-factor verification</h2>
+                <p className="text-sm text-slate-400">
+                  {challenge?.emailEnabled && challenge?.totpEnabled
+                    ? "Enter an email or authenticator code."
+                    : challenge?.emailEnabled
+                      ? "Enter the code sent to your email."
+                      : "Enter a code from your authenticator app."}
+                </p>
+                {challenge?.emailEnabled && (
+                  <button type="button" onClick={() => sendEmailOtp("login").catch((err) => setError(err.response?.data?.message || "Could not send email code"))} className="text-sm font-bold text-indigo-400 hover:text-indigo-300">
+                    Send email code
+                  </button>
+                )}
+                <input value={code} onChange={(e) => setCode(e.target.value.replace(/[^A-Za-z0-9-]/g, "").slice(0, 9))} inputMode="text" autoComplete="one-time-code" placeholder="Code" className="auth-input h-12 text-center text-lg tracking-[0.25em]" />
+                <button type="submit" disabled={loading || !code} className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm font-bold text-white">Verify</button>
+              </form>
+            )}
+
+            {step === "waiting" && approval && (
+              <div className="space-y-5 text-center">
+                <h2 className="text-xl font-bold text-white">Waiting for approval</h2>
+                <p className="text-sm text-slate-400">Share this number with the approver.</p>
+                <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-3xl border border-indigo-400/30 bg-indigo-500/10 text-5xl font-black text-indigo-300 shadow-[0_16px_50px_rgba(79,70,229,0.25)]">
+                  {approval.userNumber}
+                </div>
+                <p className="text-sm text-slate-400">Expires in <span className="font-bold text-white">{remaining}s</span></p>
+                <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
+                  <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all" style={{ width: `${Math.max(0, remaining / 180 * 100)}%` }} />
+                </div>
+              </div>
+            )}
+
+            {step === "password" && (
+              <form onSubmit={handleLogin} className="space-y-5">
               <div>
                 <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-300">
                   Email address
@@ -158,14 +356,17 @@ export default function Login() {
                   </>
                 )}
               </button>
-            </form>
+              </form>
+            )}
 
-            <p className="mt-8 text-center text-sm text-slate-400">
-              Need access?{" "}
-              <Link to="/register" className="font-bold text-indigo-600 hover:text-purple-600">
-                Create an account
-              </Link>
-            </p>
+            {step === "password" && (
+              <p className="mt-8 text-center text-sm text-slate-400">
+                Need access?{" "}
+                <Link to="/register" className="font-bold text-indigo-600 hover:text-purple-600">
+                  Create an account
+                </Link>
+              </p>
+            )}
           </div>
         </section>
       </div>

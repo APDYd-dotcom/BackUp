@@ -36,6 +36,12 @@ export default function Navbar() {
                 >
                   Dashboard
                 </Link>
+                <Link
+                  to="/settings"
+                  className="hidden text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors sm:inline"
+                >
+                  Security
+                </Link>
                 
                 <div className="hidden sm:block w-px h-5 bg-gray-300 dark:bg-gray-700"></div>
                 

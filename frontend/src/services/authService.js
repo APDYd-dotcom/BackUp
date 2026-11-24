@@ -18,4 +18,15 @@ export const getMe = async (token) => {
   });
   return res.data;
 };
-  
+
+export const verifyLogin2fa = async (payload) => {
+  const res = await axios.post(`${API_URL}/login/2fa`, payload);
+  return res.data;
+};
+
+export const getLoginApprovalStatus = async (approvalId, approvalToken) => {
+  const res = await axios.get(`${API_URL}/login/approval/${approvalId}`, {
+    params: { approvalToken },
+  });
+  return res.data;
+};
