@@ -43,47 +43,74 @@ export default function ClientAccountView() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <Link to="/admin" className="text-blue-600 hover:text-blue-800 transition font-medium text-xl shadow-sm bg-blue-50 py-1 px-3 rounded-lg dark:bg-gray-700 dark:text-blue-400">← Back</Link>
-            <h1 className="min-w-0 break-words text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
-              {client ? `${client.name}'s Accounts` : "Client Accounts"}
-            </h1>
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 px-4 py-6 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
+        <header className="rounded-3xl border border-indigo-100 bg-gradient-to-br from-white via-white to-indigo-50 p-5 shadow-sm dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/40 sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <Link to="/admin" className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-950/50 dark:text-indigo-300 dark:hover:bg-slate-800">
+                ← User management
+              </Link>
+              <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">Client vault</p>
+              <h1 className="mt-1 break-words text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                {client ? `${client.name}'s accounts` : "Client accounts"}
+              </h1>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                Add and manage credentials for this client.
+              </p>
+            </div>
+            {!loading && (
+              <div className="flex w-fit items-center gap-3 rounded-2xl border border-indigo-100 bg-white/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/50">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-lg font-bold text-indigo-600 dark:text-indigo-300">
+                  {accounts.length}
+                </span>
+                <span>
+                  <span className="block text-sm font-bold text-slate-900 dark:text-white">Accounts</span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">Saved for this client</span>
+                </span>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
+        </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.8fr)] xl:gap-8">
           {/* Add Account Panel */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 lg:sticky lg:top-6">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4 text-lg">Add New Account</h3>
-              <AccountCreator 
-                userId={id} 
-                onCreated={(acc) => setAccounts(prev => [acc, ...prev])} 
+          <div className="min-w-0 lg:sticky lg:top-24">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+              <div className="mb-5 border-b border-slate-100 pb-4 dark:border-slate-800">
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-300">New credential</p>
+                <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">Add new account</h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Save an account to this client’s vault.</p>
+              </div>
+              <AccountCreator
+                userId={id}
+                onCreated={(acc) => setAccounts(prev => [acc, ...prev])}
               />
             </div>
           </div>
 
           {/* Accounts Grid */}
-          <div className="lg:col-span-3">
+          <section aria-label="Client accounts" className="min-w-0">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Saved accounts</h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Credentials and account details</p>
+              </div>
+            </div>
             {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+              <div className="flex min-h-56 items-center justify-center rounded-2xl border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/70">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" aria-label="Loading accounts"></div>
               </div>
             ) : accounts.length === 0 ? (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-10 text-center border border-gray-200 dark:border-gray-700 shadow-sm">
-                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-10">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-500/10">
+                  <svg className="h-8 w-8 text-indigo-500 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                 </div>
-                <p className="text-gray-900 dark:text-white text-lg font-medium">No accounts found</p>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Use the side panel to add their first social media account.</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white">No accounts yet</p>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Use the form to add this client’s first account.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:gap-5">
                 {accounts.map((acc) => (
                   <AccountCard
                     key={acc.id}
@@ -94,10 +121,10 @@ export default function ClientAccountView() {
                 ))}
               </div>
             )}
-          </div>
+          </section>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -117,16 +144,16 @@ function AccountCreator({ userId, onCreated }) {
     setLoading(true);
     setError("");
     try {
-      const payload = { 
-        platform, 
-        username, 
-        password, 
-        client_name: clientName, 
-        backup_codes: backupCodes, 
-        notes 
+      const payload = {
+        platform,
+        username,
+        password,
+        client_name: clientName,
+        backup_codes: backupCodes,
+        notes
       };
       const acc = await createAccountForUser(userId, payload);
-      setPlatform(""); setUsername(""); setPassword(""); 
+      setPlatform(""); setUsername(""); setPassword("");
       setClientName(""); setBackupCodes(""); setNotes("");
       if (acc.notification && !acc.notification.emailSent) {
         toast.error(`Account created, but the Super Admin email was not sent (${acc.notification.emailsSent}/${acc.notification.recipients}). Check the backend SMTP settings and logs.`);
@@ -149,40 +176,46 @@ function AccountCreator({ userId, onCreated }) {
           {error}
         </div>
       )}
-      <input 
-        value={platform} onChange={e=>setPlatform(e.target.value)} 
-        placeholder="Platform (e.g. Gmail)" required 
-        className="w-full px-4 py-3 border rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none transition" 
+      <input
+        value={platform} onChange={e=>setPlatform(e.target.value)}
+        placeholder="Platform (e.g. Gmail)" required
+        aria-label="Platform"
+        className="w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-slate-800 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition"
       />
-      <input 
-        value={username} onChange={e=>setUsername(e.target.value)} 
-        placeholder="Username/Email" required 
-        className="w-full px-4 py-3 border rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none transition" 
+      <input
+        value={username} onChange={e=>setUsername(e.target.value)}
+        placeholder="Username/Email" required
+        aria-label="Username or email"
+        className="w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-slate-800 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition"
       />
-      <input 
-        value={password} onChange={e=>setPassword(e.target.value)} 
+      <input
+        value={password} onChange={e=>setPassword(e.target.value)}
         type="password"
-        placeholder="Password" required 
-        className="w-full px-4 py-3 border rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none transition" 
+        placeholder="Password" required
+        aria-label="Account password"
+        className="w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-slate-800 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition"
       />
-      <input 
-        value={clientName} onChange={e=>setClientName(e.target.value)} 
-        placeholder="Client Name (e.g. Acme)" 
-        className="w-full px-4 py-3 border rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none transition" 
+      <input
+        value={clientName} onChange={e=>setClientName(e.target.value)}
+        placeholder="Client Name (e.g. Acme)"
+        aria-label="Client name"
+        className="w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-slate-800 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition"
       />
-      <textarea 
-        value={backupCodes} onChange={e=>setBackupCodes(e.target.value)} 
+      <textarea
+        value={backupCodes} onChange={e=>setBackupCodes(e.target.value)}
         placeholder="Paste Backup Codes..." rows="4"
-        className="w-full px-4 py-3 border rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600 font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none transition" 
+        aria-label="Backup codes"
+        className="w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-slate-800 dark:border-slate-700 font-mono text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition"
       />
-      <textarea 
-        value={notes} onChange={e=>setNotes(e.target.value)} 
+      <textarea
+        value={notes} onChange={e=>setNotes(e.target.value)}
         placeholder="Additional Notes" rows="2"
-        className="w-full px-4 py-3 border rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none transition" 
+        aria-label="Additional notes"
+        className="w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-slate-800 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition"
       />
-      <button 
-        type="submit" disabled={loading} 
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl transition font-medium"
+      <button
+        type="submit" disabled={loading}
+        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl transition font-bold shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Creating..." : "Create Account"}
       </button>

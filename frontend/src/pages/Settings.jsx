@@ -102,10 +102,29 @@ export default function Settings() {
   return (
     <main className="min-h-screen bg-[#0f172a] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl space-y-6">
-        <header>
-          <p className="text-sm font-bold text-indigo-400">ACCOUNT SECURITY</p>
-          <h1 className="mt-1 text-3xl font-bold text-white">Two-factor authentication</h1>
-          <p className="mt-2 text-sm text-slate-400">Protect sign-in with email codes or an authenticator app.</p>
+        <header className="rounded-3xl border border-indigo-400/15 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900 p-5 shadow-xl shadow-indigo-950/10 sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-400/20">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-300">Account security</p>
+                <h1 className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">Two-factor authentication</h1>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Protect sign-in with email codes or an authenticator app.</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 sm:justify-end">
+              <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${status.emailEnabled ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>
+                Email {status.emailEnabled ? "on" : "off"}
+              </span>
+              <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${status.totpEnabled ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>
+                Authenticator {status.totpEnabled ? "on" : "off"}
+              </span>
+            </div>
+          </div>
         </header>
 
         {error && <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300">{error}</div>}

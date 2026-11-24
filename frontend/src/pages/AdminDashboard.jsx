@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { getUsers, createUser, deleteUser, updateUser, impersonateUser } from "../services/adminService";
+import { getUsers, createUser, deleteUser, impersonateUser } from "../services/adminService";
 import AdminUserForm from "../components/AdminUserForm";
 import { AuthContext } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -40,7 +40,7 @@ export default function AdminDashboard() {
       const data = await impersonateUser(targetUser.id);
       impersonate(data.token, data.user);
       navigate("/dashboard");
-    } catch(err) {
+    } catch {
       toast.error("Failed to impersonate");
     }
   };
@@ -125,72 +125,85 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
-          <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 px-4 py-6 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
+        <header className="rounded-3xl border border-indigo-100 bg-gradient-to-br from-white via-white to-indigo-50 p-5 shadow-sm dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/40 sm:p-8">
+          <div className="flex flex-col items-stretch gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">User Management</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Manage all users and their accounts</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">Administrator workspace</p>
+              <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">User management</h1>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">Manage clients, assigned accounts, and administrator access.</p>
             </div>
             <button
               onClick={() => setShowForm(!showForm)}
-              className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-lg font-medium transition shadow-md sm:w-auto"
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-500 sm:w-auto"
             >
-              <span className="text-lg">+</span>
-              {showForm ? 'Cancel' : 'Create User'}
+              <span className="text-lg leading-none">{showForm ? "×" : "+"}</span>
+              {showForm ? "Close form" : "Create user"}
             </button>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
+          {!loading && (
+            <div className="mt-6 grid gap-3 border-t border-indigo-100 pt-5 dark:border-slate-800 sm:grid-cols-3">
+              <div className="rounded-xl bg-white/70 p-3 dark:bg-slate-950/40">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{users.length}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Total users</p>
+              </div>
+              <div className="rounded-xl bg-white/70 p-3 dark:bg-slate-950/40">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{users.filter((item) => item.role === "user").length}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Client accounts</p>
+              </div>
+              <div className="rounded-xl bg-white/70 p-3 dark:bg-slate-950/40">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{users.filter((item) => item.role === "admin").length}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Administrators</p>
+              </div>
+            </div>
+          )}
+        </header>
+
         {/* Create Form Modal */}
         {showForm && (
-          <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:mb-8 sm:p-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
             <AdminUserForm onCreate={handleCreate} onCancel={() => setShowForm(false)} />
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <section aria-label="Users" className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 xl:gap-5">
           {loading ? (
-            <div className="col-span-full flex items-center justify-center h-64">
+            <div className="col-span-full flex min-h-56 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-3"></div>
-                <p className="text-gray-600 dark:text-gray-400">Loading clients...</p>
+                <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Loading users...</p>
               </div>
             </div>
           ) : users.length === 0 ? (
-            <div className="col-span-full flex items-center justify-center h-64 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+            <div className="col-span-full flex min-h-56 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-10 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="text-center">
-                <p className="text-gray-500 dark:text-gray-400 text-lg">No clients found</p>
-                <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Create your first client to get started</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white">No users yet</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Create your first user to get started.</p>
               </div>
             </div>
           ) : (
             users.map(u => (
-              <div key={u.id} className="min-w-0 bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 flex flex-col justify-between sm:p-6">
+              <article key={u.id} className="flex min-w-0 flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 sm:p-5">
                 <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-sm">
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-xl font-bold text-white shadow-sm">
                       {u.name.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
                         u.role === 'admin'
-                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
-                          : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                          ? 'bg-violet-100 text-violet-800 dark:bg-violet-500/10 dark:text-violet-200'
+                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200'
                       }`}>
                         {u.role}
                       </span>
-                    </div>
                   </div>
-                  <h3 className="break-words text-xl font-bold text-gray-900 dark:text-white mb-1">{u.name}</h3>
-                  <p className="break-all text-sm text-gray-500 dark:text-gray-400 mb-2">{u.email}</p>
+                  <h3 className="break-words text-lg font-bold text-slate-900 dark:text-white">{u.name}</h3>
+                  <p className="mt-1 break-all text-sm text-slate-500 dark:text-slate-400">{u.email}</p>
                   
                   {u.plain_password && (
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4 border border-gray-100 dark:border-gray-600">
+                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/50">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs text-gray-500 uppercase tracking-wider block">Admin Password</span>
                         <button
@@ -208,7 +221,7 @@ export default function AdminDashboard() {
                   )}
                 </div>
                 
-                <div className="flex items-center gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <div className="mt-5 flex items-center gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
                   {u.role !== 'admin' ? (
                     <button
                       onClick={() => navigate(`/admin/client/${u.id}`)}
@@ -243,10 +256,10 @@ export default function AdminDashboard() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                   </button>
                 </div>
-              </div>
+              </article>
             ))
           )}
-        </div>
+        </section>
       </div>
 
       {/* DELETE MODAL */}
@@ -363,6 +376,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }
