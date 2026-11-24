@@ -1,6 +1,7 @@
 import { openDB } from "../config/db.js";
 import bcrypt from "bcryptjs";
 import { encrypt, decrypt } from "../utils/crypto.js";
+import { writeAudit } from "../services/audit.service.js";
 
 /**
  * POST /api/accounts
@@ -98,14 +99,30 @@ export async function deleteAccount(req, res) {
     const db = await openDB();
     const { id } = req.params;
     const userId = req.userId;
-    const { password } = req.body;
+    const { password, approvalId } = req.body;
+
+    const currentUser = await db.get("SELECT password, role FROM users WHERE id = ?", [userId]);
+    if (!currentUser) return res.status(401).json({ message: "Unauthorized" });
+
+    if (currentUser.role !== "superadmin") {
+      if (!approvalId) {
+        return res.status(428).json({
+          message: "Protected action approval required",
+          code: "ACTION_APPROVAL_REQUIRED",
+        });
+      }
+      const approval = await db.get(
+        "SELECT * FROM action_approvals WHERE id=? AND requester_id=? AND action='delete' AND resource_type='account' AND resource_id=? AND status='verified'",
+        [approvalId, userId, id],
+      );
+      if (!approval) {
+        return res.status(403).json({ message: "Valid action approval required" });
+      }
+    }
 
     if (!password) {
       return res.status(400).json({ message: "Password is required to delete." });
     }
-
-    const currentUser = await db.get("SELECT password, role FROM users WHERE id = ?", [userId]);
-    if (!currentUser) return res.status(401).json({ message: "Unauthorized" });
 
     const isValid = await bcrypt.compare(password, currentUser.password);
     if (!isValid) return res.status(401).json({ message: "Invalid password." });
@@ -129,6 +146,22 @@ export async function deleteAccount(req, res) {
     }
 
     await db.run("DELETE FROM accounts WHERE id = ?", [id]);
+    if (approvalId) {
+      await db.run(
+        "UPDATE action_approvals SET status='executed', executed_at=datetime('now') WHERE id=? AND status='verified'",
+        [approvalId],
+      );
+    }
+    await writeAudit({
+      userId,
+      action: "account.deleted",
+      resourceType: "account",
+      resourceId: id,
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
+      result: "success",
+      metadata: { approvalId: approvalId || null, directSuperAdmin: currentUser.role === "superadmin" },
+    });
 
     res.json({ message: "Account deleted successfully" });
   } catch (error) {
@@ -145,7 +178,20 @@ export async function updateAccount(req, res) {
     const db = await openDB();
     const { id } = req.params;
     const userId = req.userId;
-    const { platform, username, password, notes, client_name, backup_codes } = req.body;
+    const { platform, username, password, notes, client_name, backup_codes, approvalId } = req.body;
+    const currentUser = await db.get("SELECT role FROM users WHERE id = ?", [userId]);
+    if (currentUser.role !== "superadmin") {
+      const approval = await db.get(
+        "SELECT * FROM action_approvals WHERE id=? AND requester_id=? AND action='update' AND resource_type='account' AND resource_id=? AND status='verified'",
+        [approvalId, userId, id],
+      );
+      if (!approval) {
+        return res.status(428).json({
+          message: "Protected action approval required",
+          code: "ACTION_APPROVAL_REQUIRED",
+        });
+      }
+    }
 
     const existing = await db.get(
       `SELECT a.*, u.parent_id 
@@ -156,8 +202,6 @@ export async function updateAccount(req, res) {
     );
     if (!existing) return res.status(404).json({ message: "Account not found" });
 
-    const currentUser = await db.get("SELECT role FROM users WHERE id = ?", [userId]);
-    
     if (existing.user_id !== userId && existing.parent_id !== userId && currentUser.role !== 'superadmin') {
       return res.status(403).json({ message: "Unauthorized to update this account" });
     }
@@ -188,6 +232,12 @@ export async function updateAccount(req, res) {
         id
       ]
     );
+    if (approvalId) {
+      await db.run(
+        "UPDATE action_approvals SET status='executed', executed_at=datetime('now') WHERE id=? AND status='verified'",
+        [approvalId],
+      );
+    }
 
     const updatedRaw = await db.get(
       "SELECT * FROM accounts WHERE id = ?",
@@ -203,6 +253,16 @@ export async function updateAccount(req, res) {
       client_name: decrypt(updatedRaw.client_name),
       backup_codes: decrypt(updatedRaw.backup_codes)
     };
+    await writeAudit({
+      userId,
+      action: "account.updated",
+      resourceType: "account",
+      resourceId: id,
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
+      result: "success",
+      metadata: { approvalId: approvalId || null, directSuperAdmin: currentUser.role === "superadmin" },
+    });
 
     res.json(updated);
   } catch (err) {
@@ -210,4 +270,3 @@ export async function updateAccount(req, res) {
     res.status(500).json({ message: "Update failed" });
   }
 }
-

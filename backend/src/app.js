@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import twoFactorRoutes from "./routes/twoFactor.routes.js";
 import rateLimit from "express-rate-limit";
+import actionApprovalRoutes from "./routes/actionApproval.routes.js";
 
 const app = express();
 
@@ -31,5 +32,6 @@ app.use("/api/accounts", accountRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/2fa", twoFactorRoutes);
+app.use("/api/actions", actionApprovalRoutes);
 
 export default app;
