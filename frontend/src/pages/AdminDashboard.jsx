@@ -105,7 +105,7 @@ export default function AdminDashboard() {
     try {
       setUpdatingPass(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`/node/api/admin/users/${userToUpdate.id}`, {
+      const res = await fetch(`/api/admin/users/${userToUpdate.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ password: newAdminPassword })
