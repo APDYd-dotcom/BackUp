@@ -4,6 +4,7 @@ import accountRoutes from "./routes/account.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import twoFactorRoutes from "./routes/twoFactor.routes.js";
+import rateLimit from "express-rate-limit";
 
 const app = express();
 
@@ -15,6 +16,16 @@ app.use((req, res, next) => {
 
 app.use(cors());
 app.use(express.json());
+
+const otpLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many security requests. Please try again later." },
+});
+
+app.use("/api/auth/login", otpLimiter);
 
 app.use("/api/accounts", accountRoutes);
 app.use("/api/auth", authRoutes);
