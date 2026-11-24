@@ -111,6 +111,22 @@ export default function Settings() {
         {error && <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300">{error}</div>}
         {message && <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-300">{message}</div>}
 
+        <section className={`rounded-2xl border p-5 ${status.smtpConfigured ? "border-emerald-500/30 bg-emerald-500/10" : "border-amber-500/30 bg-amber-500/10"}`}>
+          <h2 className="font-bold text-white">Email delivery</h2>
+          <p className={`mt-2 text-sm ${status.smtpConfigured ? "text-emerald-300" : "text-amber-200"}`}>
+            {status.smtpConfigured
+              ? `Email OTP is ready${status.smtpFrom ? ` from ${status.smtpFrom}` : ""}.`
+              : "Email OTP is unavailable until SMTP host, username, and password are configured in backend/.env."}
+          </p>
+          {!status.smtpConfigured && (
+            <pre className="mt-3 overflow-x-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-300">{`SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-sender@example.com
+SMTP_PASS=your-app-password
+SMTP_FROM=Vault Security <your-sender@example.com>`}</pre>
+          )}
+        </section>
+
         <section className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-slate-700 bg-slate-900 p-5">
             <h2 className="font-bold text-white">Email verification</h2>

@@ -11,6 +11,7 @@ import {
   secureEqual,
 } from "../utils/security.js";
 import { sendMail } from "../services/mail.service.js";
+import { isSmtpConfigured } from "../services/mail.service.js";
 
 const router = express.Router();
 router.use(async (req, res, next) => {
@@ -48,6 +49,8 @@ router.get("/status", async (req, res) => {
   res.json({
     emailEnabled: Boolean(settings?.email_enabled),
     totpEnabled: Boolean(settings?.totp_enabled),
+    smtpConfigured: isSmtpConfigured(),
+    smtpFrom: isSmtpConfigured() ? process.env.SMTP_FROM || process.env.SMTP_USER : null,
   });
 });
 
@@ -131,13 +134,21 @@ router.post("/email/send", async (req, res) => {
     [req.userId, hashSecret(code), purpose],
   );
 
-  void sendMail({
+  const mailResult = await sendMail({
     to: user.email,
     subject: "Your Vault verification code",
     text: `Hello ${user.name}, your Vault verification code is ${code}. It expires in 5 minutes.`,
   });
 
-  res.json({ sent: true, expiresInSeconds: 300 });
+  if (mailResult?.failed || mailResult?.skipped) {
+    await db.run("UPDATE email_otps SET used_at=datetime('now') WHERE id=(SELECT id FROM email_otps WHERE user_id=? AND purpose=? ORDER BY created_at DESC LIMIT 1)", [req.userId, purpose]);
+    return res.status(503).json({
+      message: "Email delivery is not configured or could not deliver the code",
+      smtpConfigured: isSmtpConfigured(),
+    });
+  }
+
+  res.json({ sent: true, expiresInSeconds: 300, smtpConfigured: true });
 });
 
 router.post("/email/verify", async (req, res) => {

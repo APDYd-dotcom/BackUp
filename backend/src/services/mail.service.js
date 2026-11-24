@@ -2,6 +2,14 @@ import nodemailer from "nodemailer";
 
 let transporter;
 
+export function isSmtpConfigured() {
+  return Boolean(
+    process.env.SMTP_HOST &&
+    process.env.SMTP_USER &&
+    process.env.SMTP_PASS,
+  );
+}
+
 function getTransporter() {
   if (transporter) return transporter;
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {

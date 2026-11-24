@@ -8,6 +8,26 @@
 4. Configure SMTP credentials.
 5. Restart the backend before approving or creating users.
 
+## Email OTP SMTP configuration
+
+Set these values in `backend/.env`:
+
+```env
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-sender@example.com
+SMTP_PASS=your-app-password
+SMTP_FROM=Vault Security <your-sender@example.com>
+```
+
+- `SMTP_HOST` is the outgoing mail server host.
+- `SMTP_PORT` is usually `587` for STARTTLS or `465` for implicit TLS.
+- `SMTP_USER` is the sender account.
+- `SMTP_PASS` is the account password or provider app password.
+- `SMTP_FROM` is the visible sender name and address.
+
+The Security settings page reports whether SMTP is configured. It does not display or store SMTP passwords in the browser.
+
 Changing `ENCRYPTION_KEY` or `OTP_PEPPER` after encrypted data or hashes exist may make existing data unreadable or invalidate OTP/backup-code records.
 
 ## Enabling user 2FA
