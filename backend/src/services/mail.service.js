@@ -3,11 +3,14 @@ import nodemailer from "nodemailer";
 let transporter;
 
 export function isSmtpConfigured() {
-  return Boolean(
-    process.env.SMTP_HOST &&
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS,
-  );
+  const host = process.env.SMTP_HOST?.trim();
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim();
+  if (!host || !user || !pass) return false;
+  if (/smtp\.example\.com|example\.com|replace-with|your-sender|your-app-password/i.test(`${host} ${user} ${pass}`)) {
+    return false;
+  }
+  return true;
 }
 
 function getTransporter() {
