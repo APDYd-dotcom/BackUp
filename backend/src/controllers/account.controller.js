@@ -1,7 +1,7 @@
 import { openDB } from "../config/db.js";
 import bcrypt from "bcryptjs";
 import { encrypt, decrypt } from "../utils/crypto.js";
-import { writeAudit } from "../services/audit.service.js";
+import { notifySuperAdmins, writeAudit } from "../services/audit.service.js";
 
 /**
  * POST /api/accounts
@@ -36,6 +36,27 @@ export async function addAccount(req, res) {
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [encPlatform, encUsername, encPassword, encNotes, encClientName, encBackupCodes, userId]
     );
+
+    const creator = await db.get("SELECT name, role FROM users WHERE id = ?", [userId]);
+    await writeAudit({
+      userId,
+      action: "account.created",
+      resourceType: "account",
+      resourceId: result.lastID,
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
+      result: "success",
+    });
+    if (creator?.role !== "superadmin") {
+      await notifySuperAdmins({
+        title: "New account added",
+        message: `${creator?.name || "A user"} added a new ${platform} account${client_name ? ` for ${client_name}` : ""}.`,
+        type: "account_alert",
+        resourceType: "account",
+        resourceId: result.lastID,
+        metadata: { createdBy: creator?.name || null },
+      });
+    }
 
     res.status(201).json({
       id: result.lastID,

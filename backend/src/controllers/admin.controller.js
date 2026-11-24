@@ -2,6 +2,7 @@ import { openDB } from "../config/db.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { encrypt, decrypt } from "../utils/crypto.js";
+import { notifySuperAdmins, writeAudit } from "../services/audit.service.js";
 
 export async function getUsers(req, res) {
   try {
@@ -139,6 +140,28 @@ export async function createAccountForUser(req, res) {
       `INSERT INTO accounts (platform, username, password, notes, client_name, backup_codes, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [encPlatform, encUsername, encPassword, encNotes, encClientName, encBackupCodes, id]
     );
+
+    const creator = await db.get("SELECT name, role FROM users WHERE id = ?", [req.userId]);
+    const accountOwner = await db.get("SELECT name FROM users WHERE id = ?", [id]);
+    await writeAudit({
+      userId: req.userId,
+      action: "account.created",
+      resourceType: "account",
+      resourceId: result.lastID,
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
+      result: "success",
+    });
+    if (creator?.role !== "superadmin") {
+      await notifySuperAdmins({
+        title: "New account added",
+        message: `${creator?.name || "An administrator"} added a new ${platform} account for ${accountOwner?.name || "a user"}${client_name ? ` (${client_name})` : ""}.`,
+        type: "account_alert",
+        resourceType: "account",
+        resourceId: result.lastID,
+        metadata: { createdBy: creator?.name || null, accountOwner: accountOwner?.name || null },
+      });
+    }
 
     res.status(201).json({ id: result.lastID, platform, username, password, notes, client_name, backup_codes });
   } catch (err) {

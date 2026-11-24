@@ -13,6 +13,7 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
   const [loading, setLoading] = useState(false);
   const [modalError, setModalError] = useState("");
   const [actionApproval, setActionApproval] = useState(null);
+  const [approvalPromptOpen, setApprovalPromptOpen] = useState(false);
   const [approvalOtp, setApprovalOtp] = useState("");
 
   const [form, setForm] = useState({
@@ -58,10 +59,13 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
         payload: action === "update" ? form : {},
       });
       setActionApproval(result);
+      setApprovalPromptOpen(true);
       setApprovalOtp("");
       toast.success("Ask a Super Admin for the approval OTP");
+      return result;
     } catch (err) {
       setModalError(err.response?.data?.message || "Could not request approval");
+      return null;
     }
   };
 
@@ -69,11 +73,28 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
     e.preventDefault();
     if (!actionApproval?.approvalId) return;
     setModalError("");
+
+    if (actionApproval.verified) {
+      if (actionApproval.action === "update") {
+        await handleUpdate(e, actionApproval.approvalId);
+      } else {
+        setApprovalPromptOpen(false);
+      }
+      return;
+    }
+
     try {
       setLoading(true);
       const result = await verifyActionApproval(actionApproval.approvalId, approvalOtp);
-      setActionApproval({ ...actionApproval, verified: true, ...result });
-      toast.success("OTP verified. Retry the protected action.");
+      const verifiedApproval = { ...actionApproval, verified: true, ...result };
+      setActionApproval(verifiedApproval);
+
+      if (verifiedApproval.action === "update") {
+        await handleUpdate(e, verifiedApproval.approvalId);
+      } else {
+        setApprovalPromptOpen(false);
+        toast.success("OTP verified. Confirm the protected action.");
+      }
     } catch (err) {
       setModalError(err.response?.data?.message || "OTP verification failed");
     } finally {
@@ -100,6 +121,7 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
       toast.success("Account deleted");
       if (onDelete) onDelete(account.id); 
       setDeleting(false);
+      setActionApproval(null);
     } catch (err) {
       setModalError(err.response?.data?.message || "Failed to delete account");
     } finally {
@@ -107,7 +129,7 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
     }
   };
   
-  const handleUpdate = async (e) => {
+  const handleUpdate = async (e, approvalId) => {
     e.preventDefault();
     setModalError("");
     try {
@@ -127,7 +149,7 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
           notes: form.notes || "", // Include notes if needed
           client_name: form.client_name,
           backup_codes: form.backup_codes,
-          approvalId: actionApproval?.verified ? actionApproval.approvalId : undefined,
+          approvalId: approvalId || (actionApproval?.verified ? actionApproval.approvalId : undefined),
         },
         {
           headers: {
@@ -137,12 +159,17 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
         }
       );
   
-      console.log("Update response:", res.data); // Debug
       if (onUpdate) onUpdate(res.data);
       toast.success("Account updated");
       setEditing(false);
+      setActionApproval(null);
+      setApprovalPromptOpen(false);
     } catch (err) {
-      setModalError(err.response?.data?.message || "Update failed");
+      if (!approvalId && err.response?.data?.code === "ACTION_APPROVAL_REQUIRED") {
+        await requestProtectedAction("update");
+      } else {
+        setModalError(err.response?.data?.message || "Update failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -239,10 +266,12 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
             <button
               onClick={() => {
                 setModalError("");
-                requestProtectedAction("update").then(() => setEditing(false));
+                setActionApproval(null);
+                setApprovalPromptOpen(false);
+                setEditing(true);
               }}
               className="p-2 rounded-full bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500 hover:text-white transition"
-              title="Request approval to update"
+              title="Update account"
             >
               <FaEdit />
             </button>
@@ -261,32 +290,50 @@ export default function AccountCard({ account, onDelete, onUpdate }) {
         </div>
       </div>
 
-      {actionApproval && (
+      {actionApproval && approvalPromptOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <form onSubmit={verifyProtectedAction} className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
             <h2 className="text-lg font-bold text-white">Super Admin approval OTP</h2>
             <p className="mt-2 text-sm text-slate-400">
               Ask a Super Admin for the 6-digit OTP for this {actionApproval.action || "protected"} action.
             </p>
+            {actionApproval.verified && actionApproval.action === "update" && (
+              <p className="mt-3 text-sm text-emerald-300">
+                OTP verified. Your account update is ready to submit.
+              </p>
+            )}
             {modalError && (
               <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
                 {modalError}
               </div>
             )}
-            <input
-              value={approvalOtp}
-              onChange={(e) => setApprovalOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              placeholder="6-digit approval OTP"
-              className="auth-input mt-4 h-12 text-center text-lg tracking-[0.35em]"
-              required
-            />
+            {!actionApproval.verified && (
+              <input
+                value={approvalOtp}
+                onChange={(e) => setApprovalOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="6-digit approval OTP"
+                className="auth-input mt-4 h-12 text-center text-lg tracking-[0.35em]"
+                required
+              />
+            )}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <button type="submit" disabled={loading || approvalOtp.length !== 6} className="h-11 rounded-xl bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700">
-                {loading ? "Verifying..." : "Verify OTP"}
+              <button type="submit" disabled={loading || (!actionApproval.verified && approvalOtp.length !== 6)} className="h-11 rounded-xl bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700">
+                {loading ? "Processing..." : actionApproval.verified ? "Retry action" : "Verify OTP"}
               </button>
-              <button type="button" onClick={() => setActionApproval(null)} className="h-11 rounded-xl border border-slate-700 text-sm font-bold text-slate-300 hover:bg-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setApprovalPromptOpen(false);
+                  if (!actionApproval.verified) {
+                    if (actionApproval.action === "update") setEditing(false);
+                    if (actionApproval.action === "delete") setDeleting(false);
+                    setActionApproval(null);
+                  }
+                }}
+                className="h-11 rounded-xl border border-slate-700 text-sm font-bold text-slate-300 hover:bg-slate-800"
+              >
                 Cancel
               </button>
             </div>
